@@ -4,7 +4,7 @@ local PANEL = {
     self:SetKeyBoardInputEnabled(true)
     self:SetMouseInputEnabled(true)
 
-    self:OpenURL("https://bonyoze.github.io/gmod-bonchat/resources/chatbox.html")
+    self:SetHTML(BonChat.html)
 
     self:AddFunction("glua", "say", function(text)
       if not text or #text == 0 then return end
