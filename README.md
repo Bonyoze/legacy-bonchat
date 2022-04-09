@@ -27,5 +27,5 @@
 ### Acknowledgements
 - [simple-markdown](https://github.com/Khan/simple-markdown) *(parsing markdown to HTML)*
 - [discord-emoji](https://github.com/amethyst-studio/discord_emoji) *(emoji shortcode data)*
-- [Twemoji](https://github.com/twitter/twemoji) *(Twemoji emoji support)*
-- [Discord](https://discord.com) *(Discord emoji support)*
+- [Twemoji](https://twemoji.twitter.com) *(Twemoji api for emoji support)*
+- [Discord](https://discord.com) *(Discord api for emoji support)*
