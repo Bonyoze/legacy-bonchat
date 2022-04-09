@@ -5,7 +5,17 @@ return [[<html>
       html, body {
         margin: 0;
         overflow: hidden;
+      }
+
+      html {
         font-size: 14px;
+      }
+
+      body {
+        font-family: Verdana;
+        font-size: 1rem;
+        line-height: 1.375rem;
+        text-shadow: 1px 1px 1px #000, 1px 1px 2px #000;
       }
 
       #chatbox {
@@ -20,11 +30,6 @@ return [[<html>
         padding-right: 2px;
         overflow-x: hidden;
         overflow-y: scroll;
-
-        font-family: Verdana;
-        font-size: 1rem;
-        line-height: 1.375rem;
-        text-shadow: 1px 1px 1px #000, 1px 1px 2px #000;
       }
       #chatbox::-webkit-scrollbar {
         width: 8px;
@@ -55,11 +60,6 @@ return [[<html>
 
         color: #fff;
         white-space: nowrap;
-
-        font-family: Verdana;
-        font-size: 1rem;
-        line-height: 1.375rem;
-        text-shadow: 1px 1px 1px #000, 1px 1px 2px #000;
       }
 
       .message {
