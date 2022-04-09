@@ -119,14 +119,10 @@ return [[<html>
       }
 
       .emoji {
-        width: 1.5em;
-        height: 1.5em;
-        vertical-align: middle;
-        margin-top: -1.5em;
-        margin-bottom: -1.5em;
-        user-select: none;
-        -webkit-user-select: none;
-        background-color: transparent;
+        display: inline-block;
+        width: 1.375em;
+        height: 1.375em;
+        vertical-align: bottom;
       }
     </style>
   </head>
