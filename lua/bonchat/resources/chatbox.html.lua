@@ -311,6 +311,42 @@ return [[<html>
           return htmlTag("span", htmlTag("span", output(node.content)), { class: "spoiler" });
         }
       },
+      twemoji_emoji: {
+        match: /^:([^\s:]+):/,
+        parse: function(capture) {
+          return {
+            name: capture[1]
+          };
+        },
+        html: function(node) {
+          var char = getEmojiByShortcode(node.name);
+          if (char) {
+            return htmlTag("img", "", {
+              class: "emoji",
+              src: buildTwemojiURL(char),
+              alt: ":" + node.name + ":"
+            });
+          } else
+            return ":" + node.name + ":";
+        }
+      },
+      discord_emoji: {
+        match: /^<(a?):(\w+):(\d+)>/,
+        parse: function(capture) {
+          return {
+            animated: capture[1] == "a",
+            name: capture[2],
+            id: capture[3]
+          };
+        },
+        html: function(node) {
+          return htmlTag("img", "", {
+            class: "emoji",
+            src: buildDiscordEmojiURL(node.id, node.animated),
+            alt: ":" + node.name + ":"
+          });
+        }
+      },
       autolink: {
         match: /^<([^:\s>]+:\/\/[^\s>]+)>/,
         parse: function(capture) {
@@ -375,42 +411,6 @@ return [[<html>
         },
         html: function(node, output) {
           return htmlTag("del", output(node.content));
-        }
-      },
-      twemoji_emoji: {
-        match: /^:([^\s:]+):/,
-        parse: function(capture) {
-          return {
-            name: capture[1]
-          };
-        },
-        html: function(node) {
-          var char = getEmojiByShortcode(node.name);
-          if (char) {
-            return htmlTag("img", "", {
-              class: "emoji",
-              src: buildTwemojiURL(char),
-              alt: ":" + node.name + ":"
-            });
-          } else
-            return ":" + node.name + ":";
-        }
-      },
-      discord_emoji: {
-        match: /^<(a?):(\w+):(\d+)>/,
-        parse: function(capture) {
-          return {
-            animated: capture[1] == "a",
-            name: capture[2],
-            id: capture[3]
-          };
-        },
-        html: function(node) {
-          return htmlTag("img", "", {
-            class: "emoji",
-            src: buildDiscordEmojiURL(node.id, node.animated),
-            alt: ":" + node.name + ":"
-          });
         }
       },
       color: {
