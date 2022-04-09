@@ -25,24 +25,9 @@ function BonChat.ClearChat()
   BonChat.frame:CallJS("chatbox.html('')")
 end
 
-function BonChat.PrepareHTML()
-  if BonChat.html then return hook.Call("BonChat_PrepareHTML") end
-
-  http.Fetch("https://raw.githubusercontent.com/Bonyoze/gmod-bonchat/main/resources/chatbox.html",
-    function(body, len, headers, code)
-      if code == 200 then
-        BonChat.html = body
-        hook.Call("BonChat_PrepareHTML")
-      else
-        error("Failed to load HTML (response code " .. code .. ")")
-      end
-    end,
-    function(err)
-      error("Failed to load HTML (" .. err .. ")")
-    end
-  )
+function BonChat.GetResource(name)
+  return include("bonchat/resources/" .. name .. ".lua")
 end
-
 
 -- override to redirect to new chatbox
 BonChat.oldAddText = BonChat.oldAddText or chat.AddText
@@ -69,13 +54,6 @@ hook.Add("PlayerBindPress", "BonChat_OpenChat", function(_, bind, pressed)
   end
 end)
 
-BonChat.PrepareHTML()
-
--- initialize the panel
-hook.Add("BonChat_PrepareHTML", "", function()
-  BonChat.ReloadChat()
-end)
-
 -- receive player messages sent using the chatbox
 net.Receive("BonChat_say", function()
   local ply = net.ReadEntity()
@@ -88,3 +66,13 @@ net.Receive("BonChat_say", function()
     IsValid(ply) and not ply:Alive() or false
   )
 end)
+
+-- initializing
+
+hook.Add("Initialize", "BonChat_Initialize", function()
+  BonChat.ReloadChat()
+end)
+
+if GAMEMODE then
+  BonChat.ReloadChat()
+end

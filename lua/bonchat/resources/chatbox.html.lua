@@ -1,15 +1,7 @@
-<!DOCTYPE html>
-<html>
+return [[<html>
   <head>
     <title>BonChat Chatbox</title>
     <style>
-      @font-face {
-        font-family: "Fart";
-        src: url("https://raw.githubusercontent.com/Bonyoze/gmod-bonchat/main/resources/fonts/verdana.ttf") format("truetype");
-        font-weight: normal;
-        font-style: normal;
-      }
-
       html, body {
         margin: 0;
         overflow: hidden;
@@ -55,7 +47,7 @@
         background: rgba(0,0,0,0.5);
         border-radius: 4px;
 
-        font-family: Fart;
+        font-family: Verdana;
         font-size: 14px;
         color: #fff;
         white-space: nowrap;
@@ -69,7 +61,7 @@
         max-height: 250px;
         overflow-x: hidden;
 
-        font-family: Fart;
+        font-family: Verdana;
         font-size: 14px;
         text-shadow: 1px 1px 1px #000, 1px 1px 2px #000;
       }
@@ -131,14 +123,13 @@
         background-color: transparent;
       }
     </style>
-    <script type="text/javascript" src="asset://garrysmod/html/js/thirdparty/jquery.js"></script>
-    <script src="https://twemoji.maxcdn.com/v/14.0.2/twemoji.min.js" integrity="sha384-32KMvAMS4DUBcQtHG6fzADguo/tpN1Nh6BAJa2QqZc6/i0K+YPQE+bWiqBRAWuFs" crossorigin="anonymous"></script>
   </head>
   <body>
     <div id="chatbox"></div>
     <div contenteditable id="entry" spellcheck="false"></div>
   </body>
-  <script>
+  <script type="text/javascript" src="asset://garrysmod/html/js/thirdparty/jquery.js"></script>
+  <script> // whitelist script
     const WHITELIST_PROTOCOLS = [
       "https",
       "http"
@@ -168,23 +159,7 @@
       "ogg",
       "mp3",
       "wav"
-    ],
-    SANITIZE_TEXT_REGEX = /[<>&"'/`]/g,
-    SANITIZE_TEXT_CODES = {
-        "<": "&lt;",
-        ">": "&gt;",
-        "&": "&amp;",
-        '"': "&quot;",
-        "'": "&#x27;",
-        "/": "&#x2F;",
-        "`": "&#96;"
-    };
-
-    function sanitizeText(text) {
-      return text.replace(SANITIZE_TEXT_REGEX, function(char) {
-        return SANITIZE_TEXT_CODES[char];
-      });
-    }
+    ];
 
     function isWhitelistedURL(href) {
       var url = document.createElement("a");
@@ -199,6 +174,79 @@
       return WHITELIST_PROTOCOLS.some(function(x) { return x == protocol; })
         && WHITELIST_DOMAINS.some(function(x) { return domain.substring(0, x.length) == x; })
         && WHITELIST_FORMATS.some(function(x) { return x == format; });
+    }
+  </script>
+  <script> // emojis script
+    // glua
+
+    function getEmojiByShortcode(shortcode) {
+      // EMOJI_DATA constant is set by GLua
+      if (EMOJI_DATA) return EMOJI_DATA[shortcode];
+    }
+
+    // twemoji
+    
+    const TWEMOJI_VERSION = "14.0.2",
+    TWEMOJI_FOLDER = "svg",
+    TWEMOJI_EXT = ".svg",
+    TWEMOJI_BASE = "https://twemoji.maxcdn.com/v/" + TWEMOJI_VERSION + "/" + TWEMOJI_FOLDER + "/";
+
+    const UFE0Fg = /\uFE0F/g,
+    U200D = String.fromCharCode(0x200D);
+    
+    function toCodePoint(unicodeSurrogates, sep) {
+      var
+        r = [],
+        c = 0,
+        p = 0,
+        i = 0;
+      while (i < unicodeSurrogates.length) {
+        c = unicodeSurrogates.charCodeAt(i++);
+        if (p) {
+          r.push((0x10000 + ((p - 0xD800) << 10) + (c - 0xDC00)).toString(16));
+          p = 0;
+        } else if (0xD800 <= c && c <= 0xDBFF) {
+          p = c;
+        } else {
+          r.push(c.toString(16));
+        }
+      }
+      return r.join(sep || "-");
+    }
+
+    function grabTheRightIcon(rawText) {
+      // if variant is present as \uFE0F
+      return toCodePoint(rawText.indexOf(U200D) < 0 ?
+        rawText.replace(UFE0Fg, "") :
+        rawText
+      );
+    }
+
+    function buildTwemojiURL(char) {
+      return TWEMOJI_BASE + grabTheRightIcon(char) + TWEMOJI_EXT;
+    }
+
+    // discord emojis
+    function buildDiscordEmojiURL(id, animated) {
+      return "https://cdn.discordapp.com/emojis/" + id + "." + (animated ? "gif" : "png");
+    }
+  </script>
+  <script> // markdown script
+    const SANITIZE_TEXT_REGEX = /[<>&"'/`]/g,
+    SANITIZE_TEXT_CODES = {
+        "<": "&lt;",
+        ">": "&gt;",
+        "&": "&amp;",
+        '"': "&quot;",
+        "'": "&#x27;",
+        "/": "&#x2F;",
+        "`": "&#96;"
+    };
+
+    function sanitizeText(text) {
+      return text.replace(SANITIZE_TEXT_REGEX, function(char) {
+        return SANITIZE_TEXT_CODES[char];
+      });
     }
 
     function sanitizeURL(url) {
@@ -329,8 +377,24 @@
           return htmlTag("del", output(node.content));
         }
       },
-      /*twemoji_emoji: {
-        match: /^
+      twemoji_emoji: {
+        match: /^:([^\s:]+):/,
+        parse: function(capture) {
+          return {
+            name: capture[1]
+          };
+        },
+        html: function(node) {
+          var char = getEmojiByShortcode(node.name);
+          if (char) {
+            return htmlTag("img", "", {
+              class: "emoji",
+              src: buildTwemojiURL(char),
+              alt: ":" + node.name + ":"
+            });
+          } else
+            return ":" + node.name + ":";
+        }
       },
       discord_emoji: {
         match: /^<(a?):(\w+):(\d+)>/,
@@ -344,11 +408,11 @@
         html: function(node) {
           return htmlTag("img", "", {
             class: "emoji",
-            src: "https://cdn.discordapp.com/emojis/" + node.id + "." + (node.animated ? "gif" : "png"),
+            src: buildDiscordEmojiURL(node.id, node.animated),
             alt: ":" + node.name + ":"
           });
         }
-      },*/
+      },
       color: {
         match: /^\$([a-z0-9]+)/i,
         parse: function(capture) {
@@ -459,12 +523,12 @@
         return rules[ast.type].html(ast, outputHTML);
       }
     }
-
+  </script>
+  <script>
     const chatbox = $("#chatbox"),
     entry = $("#entry");
 
-    var msgMaxLen = 2048;
-    var tempMsg;
+    var msgMaxLen = 2048; // temporary
 
     function isFullyScrolled() {
       var e = chatbox.get(0);
@@ -499,11 +563,6 @@
       this.send = function() {
         var id = msgID++;
         this.elem.attr("message-id", id);
-
-        twemoji.parse(this.elem.get(0), {
-          folder: "svg",
-          ext: ".svg"
-        });
 
         var scrolled = isFullyScrolled();
         this.elem.appendTo(chatbox);
@@ -590,4 +649,4 @@
         }
       });
   </script>
-</html>
+</html>]]

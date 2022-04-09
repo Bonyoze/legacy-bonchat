@@ -4,7 +4,7 @@ local PANEL = {
     self:SetKeyBoardInputEnabled(true)
     self:SetMouseInputEnabled(true)
 
-    self:SetHTML(BonChat.html)
+    self:SetHTML(BonChat.GetResource("chatbox.html"))
 
     self:AddFunction("glua", "say", function(text)
       if not text or #text == 0 then return end
@@ -25,6 +25,12 @@ local PANEL = {
       BonChat.CloseChat()
       gui.OpenURL(url)
     end)
+    
+    -- get emoji data and send to panel
+    self:Call(string.format(
+      "const EMOJI_DATA = JSON.parse(`%s`)",
+      BonChat.GetResource("emojis.json")
+    ))
   end
 }
 
