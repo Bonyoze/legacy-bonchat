@@ -179,8 +179,6 @@ return [[<html>
     }
   </script>
   <script> // emojis script
-    // glua
-
     function getEmojiByShortcode(shortcode) {
       // EMOJI_DATA constant is set by GLua
       if (EMOJI_DATA) return EMOJI_DATA[shortcode];
@@ -416,7 +414,7 @@ return [[<html>
         }
       },
       color: {
-        match: /^\$([a-z0-9]+)/i,
+        match: /^\$([a-z0-9]+)\$?/i,
         parse: function(capture) {
           return {
             content: capture[1]
