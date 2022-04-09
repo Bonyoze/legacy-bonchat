@@ -5,6 +5,7 @@ return [[<html>
       html, body {
         margin: 0;
         overflow: hidden;
+        font-size: 14px;
       }
 
       #chatbox {
@@ -15,10 +16,15 @@ return [[<html>
         top: 0;
         left: 0;
         right: 0;
-        margin-bottom: 28px;
+        margin-bottom: 30px;
         padding-right: 2px;
         overflow-x: hidden;
         overflow-y: scroll;
+
+        font-family: Verdana;
+        font-size: 1rem;
+        line-height: 1.375rem;
+        text-shadow: 1px 1px 1px #000, 1px 1px 2px #000;
       }
       #chatbox::-webkit-scrollbar {
         width: 8px;
@@ -47,10 +53,12 @@ return [[<html>
         background: rgba(0,0,0,0.5);
         border-radius: 4px;
 
-        font-family: Verdana;
-        font-size: 14px;
         color: #fff;
         white-space: nowrap;
+
+        font-family: Verdana;
+        font-size: 1rem;
+        line-height: 1.375rem;
         text-shadow: 1px 1px 1px #000, 1px 1px 2px #000;
       }
 
@@ -60,10 +68,6 @@ return [[<html>
         word-wrap: break-word;
         max-height: 250px;
         overflow-x: hidden;
-
-        font-family: Verdana;
-        font-size: 14px;
-        text-shadow: 1px 1px 1px #000, 1px 1px 2px #000;
       }
       .message:first-child {
         border-top-left-radius: 4px;
@@ -82,6 +86,8 @@ return [[<html>
       .message:hover {
         background-color: rgba(0,0,0,0.25);
       }
+
+      /* Markdown Styling */
 
       .spoiler {
         margin: -2px;
