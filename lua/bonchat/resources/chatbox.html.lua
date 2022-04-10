@@ -90,14 +90,14 @@ return [[<html>
       /* Markdown Styling */
 
       .spoiler {
-        margin: -2px;
-        padding: 2px;
+        margin: -0.15em;
+        padding: 0.15em;
         background-color: #000;
       }
-      .spoiler * {
+      .spoiler span {
         opacity: 0;
       }
-      .spoiler:hover * {
+      .spoiler:hover span {
         opacity: 1;
       }
 
@@ -107,11 +107,10 @@ return [[<html>
 
       .attachment {
         display: block;
-        margin: 4px;
-        user-select: none;
-        -webkit-user-select: none;
+        margin-top: 4px;
       }
-      .attachment img {
+
+      .imageAttachment img {
         vertical-align: top;
         max-width: 100%;
         max-height: 200px;
@@ -324,7 +323,7 @@ return [[<html>
             return htmlTag("img", "", {
               class: "emoji",
               src: buildTwemojiURL(char),
-              alt: ":" + node.name + ":"
+              alt: char
             });
           } else
             return ":" + node.name + ":";
@@ -343,7 +342,7 @@ return [[<html>
           return htmlTag("img", "", {
             class: "emoji",
             src: buildDiscordEmojiURL(node.id, node.animated),
-            alt: ":" + node.name + ":"
+            alt: "<" + (node.animated ? "a" : "") + ":" + node.name + ":" + node.id + ">"
           });
         }
       },
@@ -561,23 +560,31 @@ return [[<html>
         );
       };
       this.send = function() {
-        var id = msgID++;
-        this.elem.attr("message-id", id);
-
         var scrolled = isFullyScrolled();
         this.elem.appendTo(chatbox);
         if (scrolled) scrollToBottom();
 
-        this.elem.find("a").each(function() {
-          var a = $(this),
-          url = a.attr("href");
-          if (url && isWhitelistedURL(url)) {
-            checkImageContent(url, function() { // check if content from url can be displayed using an image
-              a
-                .attr("class", "attachment")
-                .html($("<img>").attr("src", url))
-                .appendTo(a.parent());
-            });
+        this.elem.find(".link").each(function() {
+          var elem = $(this);
+          if (!elem.parents(".spoiler").length) {
+            var url = elem.attr("href");
+            if (url && isWhitelistedURL(url)) {
+              checkImageContent(url, function() { // check if content from url can be displayed using an image
+                var scrolled = isFullyScrolled();
+                // build image attachment
+                $("<div class='attachment imageAttachment'>")
+                  .append($("<a>")
+                    .attr("href", url)
+                    .append($("<img>")
+                      .attr("src", url)
+                      .attr("alt", url)
+                    )
+                  )
+                  .appendTo(elem.closest(".message"));
+                elem.remove(); // remove the link
+                if (scrolled) scrollToBottom();
+              });
+            }
           }
         });
       }
