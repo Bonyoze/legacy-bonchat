@@ -155,6 +155,9 @@ local PANEL = {
       entry.text("");
       scrollToBottom();
     ]])
+
+    -- hide pop out frame
+    self.chatbox.popOut:Hide()
   end
 }
 

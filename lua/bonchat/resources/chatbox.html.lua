@@ -649,10 +649,18 @@ return [[<html>
     $(document)
       .on("click", function(e) {
         var elem = $(e.target),
-        url = elem.attr("href") || elem.parent().attr("href");
+        url = elem.attr("href") || elem.parents().attr("href");
         if (url) {
           event.preventDefault();
-          glua.openURL(url);
+          if (elem.is("img"))
+            glua.showImage(url,
+              elem.prop("naturalWidth"),
+              elem.prop("naturalHeight"),
+              elem.prop("width"),
+              elem.prop("height")
+            );
+          else
+            glua.openURL(url);
         }
       });
   </script>

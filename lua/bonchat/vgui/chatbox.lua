@@ -1,3 +1,5 @@
+include("bonchat/vgui/popout.lua")
+
 local PANEL = {
   Init = function(self)
     self:Dock(FILL)
@@ -8,6 +10,9 @@ local PANEL = {
     self:AddFunction("glua", "say", BonChat.Say)
     self:AddFunction("glua", "openURL", BonChat.OpenURL)
 
+    self.popOut = vgui.Create("BonChat_PopOut")
+    self:AddFunction("glua", "showImage", function(...)
+      self.popOut:ShowImage(...)
     end)
     
     -- get emoji data and send to panel
@@ -15,6 +20,9 @@ local PANEL = {
       "const EMOJI_DATA = JSON.parse(`%s`)",
       BonChat.GetResource("emojis.json")
     ))
+  end,
+  OnRemove = function(self)
+    self.popOut:Remove()
   end
 }
 
