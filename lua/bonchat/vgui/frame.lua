@@ -1,8 +1,6 @@
 include("bonchat/vgui/chatbox.lua")
 include("bonchat/vgui/settings.lua")
 
-local blur = Material("pp/blurscreen")
-
 local PANEL = {
   Init = function(self)
     self:SetSize(ScrW() * 0.25, ScrH() * 0.5)
@@ -82,17 +80,6 @@ local PANEL = {
     end)
 
     self:Hide()
-  end,
-  DrawBlur = function(self, layers, density, alpha)
-    surface.SetDrawColor(255, 255, 255, alpha)
-    surface.SetMaterial(blur)
-
-    for i = 1, 3 do
-      blur:SetFloat("$blur", i / layers * density)
-      blur:Recompute()
-      render.UpdateScreenEffectTexture()
-      surface.DrawTexturedRect(-self:GetX(), -self:GetY(), ScrW(), ScrH())
-    end
   end,
   CallJS = function(self, str, ...)
     self.chatbox:Call("(function() {" .. string.format(str, ...) .. "})()")

@@ -3,27 +3,11 @@ local PANEL = {
     self:Dock(FILL)
     self:SetKeyBoardInputEnabled(true)
     self:SetMouseInputEnabled(true)
-
     self:SetHTML(BonChat.GetResource("chatbox.html"))
 
-    self:AddFunction("glua", "say", function(text)
-      if not text or #text == 0 then return end
+    self:AddFunction("glua", "say", BonChat.Say)
+    self:AddFunction("glua", "openURL", BonChat.OpenURL)
 
-      net.Start("BonChat_say")
-        net.WriteString(string.Left(text, BonChat.GetMsgMaxLen()))
-        net.WriteBool(false)
-      net.SendToServer()
-    end)
-
-    self:AddFunction("glua", "openURL", function(url)
-      if not (string.StartWith(url, "https://") or string.StartWith(url, "http://")) then
-        return BonChat.Log("Cannot open a URL unless it's using the protocol 'https' or 'http'!")
-      end
-      if #url > 512 then
-        return BonChat.Log("Cannot open a URL more than 512 characters long!", Color(180, 180, 180), " (https://github.com/Facepunch/garrysmod-issues/issues/4663)")
-      end
-      BonChat.CloseChat()
-      gui.OpenURL(url)
     end)
     
     -- get emoji data and send to panel
