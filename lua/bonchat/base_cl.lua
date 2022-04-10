@@ -25,6 +25,27 @@ function BonChat.ClearChat()
   BonChat.frame:CallJS("chatbox.html('')")
 end
 
+function BonChat.Say(text)
+  if not text or #text == 0 then return end
+
+  net.Start("BonChat_say")
+    net.WriteString(string.Left(text, BonChat.GetMsgMaxLen()))
+    net.WriteBool(false)
+  net.SendToServer()
+end
+
+function BonChat.OpenURL(url)
+  if not url or #url == 0 then return end
+  if not (string.StartWith(url, "https://") or string.StartWith(url, "http://")) then
+    return BonChat.Log("Cannot open a URL unless it's using the protocol 'https' or 'http'!")
+  end
+  if #url > 512 then
+    return BonChat.Log("Cannot open a URL more than 512 characters long!", Color(180, 180, 180), " (https://github.com/Facepunch/garrysmod-issues/issues/4663)")
+  end
+  BonChat.CloseChat()
+  gui.OpenURL(url)
+end
+
 function BonChat.GetResource(name)
   return include("bonchat/resources/" .. name .. ".lua")
 end
@@ -36,6 +57,22 @@ function chat.AddText(...)
     BonChat.frame:AppendMessage(nil, ...)
   end
   BonChat.oldAddText(...)
+end
+
+local panelMeta = FindMetaTable("Panel")
+local blur = Material("pp/blurscreen")
+
+-- custom panel function
+panelMeta.DrawBlur = function(self, layers, density, alpha)
+  surface.SetDrawColor(255, 255, 255, alpha)
+  surface.SetMaterial(blur)
+
+  for i = 1, 3 do
+    blur:SetFloat("$blur", i / layers * density)
+    blur:Recompute()
+    render.UpdateScreenEffectTexture()
+    surface.DrawTexturedRect(-self:GetX(), -self:GetY(), ScrW(), ScrH())
+  end
 end
 
 hook.Add("HUDShouldDraw", "BonChat_HideDefaultChat", function(name)
