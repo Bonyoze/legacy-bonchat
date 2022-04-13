@@ -1,5 +1,6 @@
-include("bonchat/vgui/chatbox.lua")
 include("bonchat/vgui/settings.lua")
+include("bonchat/vgui/chatbox.lua")
+include("bonchat/vgui/popout.lua")
 
 local PANEL = {
   Init = function(self)
@@ -12,7 +13,8 @@ local PANEL = {
     self:SetSizable(true)
     self:SetScreenLock(true)
 
-    self.Paint = function(self, w, h)
+    -- paint function used when the chat is open
+    self.openPaint = function(self, w, h)
       self:DrawBlur(1, 1)
       surface.SetDrawColor(30, 30, 30)
       surface.DrawOutlinedRect(0, 0, w, h, 2)
@@ -37,9 +39,17 @@ local PANEL = {
       self.settings:MakePopup()
     end
 
+    -- DHTML panel used for the actual chatbox
     self.chatbox = self:Add("BonChat_Chatbox")
 
-    // fix scale of children on resize
+    -- seperate free-moving frame for showing websites/images
+    self.popout = vgui.Create("BonChat_Popout")
+    self.OnRemove = function(self)
+      -- clean up panel
+      self.popout:Remove()
+    end
+
+    -- fix scale of children on resize
     self.OnSizeChanged = function(self, w, h)
       self.settings:SetSize(ScrW() * 0.15, self:GetTall() * 0.5)
     end
@@ -64,11 +74,11 @@ local PANEL = {
       local escape = input.IsKeyDown(KEY_ESCAPE)
 
       if not lastEnter and enter then -- on enter press, submit message and close chatbox
-         -- we can't directly get the value, so we call a function with a lua callback
+        -- we can't directly get the value, so we call a function with a lua callback
         self:CallJS("glua.say(entry.text())")
-        self:CloseChat()
+        BonChat.CloseChat()
       elseif not lastEscape and escape then -- on escape press, close the chatbox
-        self:CloseChat()
+        BonChat.CloseChat()
       end
 
       lastEnter = enter
@@ -79,7 +89,7 @@ local PANEL = {
       self:AppendMessage(nil, text)
     end)
 
-    self:Hide()
+    self:CloseFrame()
   end,
   CallJS = function(self, str, ...)
     self.chatbox:Call("(function() {" .. string.format(str, ...) .. "})()")
@@ -138,26 +148,38 @@ local PANEL = {
 
     self:RunJS()
   end,
-  OpenChat = function(self, mode)
-    chat.Open(mode)
-    self:Show()
+  OpenFrame = function(self, mode)
+    -- move the frame to the front and enable input
     self:MakePopup()
-    self.chatbox:RequestFocus() -- need to request focus so the client can type in it
-    self:CallJS("entry.focus()")
-  end,
-  CloseChat = function(self)
-    chat.Close()
-    self:Hide()
 
-    -- clear the entry where the client inputs the message
-    -- then scroll to bottom of chatbox
-    self:CallJS([[
-      entry.text("");
-      scrollToBottom();
-    ]])
+    -- start painting frame
+    self.Paint = self.openPaint
+
+    -- need to request focus so the client can type in it
+    self.chatbox:RequestFocus()
+
+    self:CallJS("$(document).trigger('panelopen')")
+  end,
+  CloseFrame = function(self)
+    -- stop the chatbox panel from drawing over other panels (like the game menu)
+    self:MoveToBack()
+
+    -- disable any input to the frame
+    self:SetKeyBoardInputEnabled(false)
+    self:SetMouseInputEnabled(false)
+
+    -- stop painting the frame
+    self.Paint = function() end
+
+    -- hide all children except for the chatbox panel
+    for _, v in ipairs(self:GetChildren()) do
+      if v ~= self.chatbox then v:Hide() end
+    end
 
     -- hide pop out frame
-    self.chatbox.popOut:Hide()
+    self.popout:Hide()
+
+    self:CallJS("$(document).trigger('panelclose')")
   end
 }
 

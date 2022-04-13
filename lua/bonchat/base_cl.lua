@@ -6,17 +6,15 @@ function BonChat.Log(...)
 end
 
 function BonChat.OpenChat(mode)
-  if not IsValid(BonChat.frame) then BonChat.ReloadChat() end
-  BonChat.frame:OpenChat(mode);
+  chat.Open(mode)
 end
 
 function BonChat.CloseChat()
-  if not IsValid(BonChat.frame) then BonChat.ReloadChat() end
-  BonChat.frame:CloseChat()
+  chat.Close()
 end
 
 function BonChat.ReloadChat()
-  if BonChat.frame ~= nil and BonChat.frame:IsValid() then BonChat.frame:Remove() end
+  if IsValid(BonChat.frame) then BonChat.frame:Remove() end
   BonChat.frame = vgui.Create("BonChat_Frame")
   chat.AddText(color_white, "BonChat has successfully loaded!")
 end
@@ -46,23 +44,38 @@ function BonChat.OpenURL(url)
   gui.OpenURL(url)
 end
 
+function BonChat.ShowImage(url, w, h, minW, minH)
+  BonChat.frame.popout:ShowImage(url, w, h, minW, minH)
+end
+
 function BonChat.GetResource(name)
   return include("bonchat/resources/" .. name .. ".lua")
 end
 
--- override to redirect to new chatbox
-BonChat.oldAddText = BonChat.oldAddText or chat.AddText
+-- override chat functions to use the new chatbox
+
+BonChat.oldChatAddText = BonChat.oldChatAddText or chat.AddText
 function chat.AddText(...)
-  if BonChat.frame ~= nil and BonChat.frame:IsValid() then
-    BonChat.frame:AppendMessage(nil, ...)
-  end
-  BonChat.oldAddText(...)
+  BonChat.frame:AppendMessage(nil, ...)
+  BonChat.oldChatAddText(...)
+end
+
+BonChat.oldChatOpen = BonChat.oldChatOpen or chat.Open
+function chat.Open(mode, ...)
+  BonChat.frame:OpenFrame(mode)
+  BonChat.oldChatOpen(mode, ...)
+end
+
+BonChat.oldChatClose = BonChat.oldChatClose or chat.Close
+function chat.Close(...)
+  BonChat.frame:CloseFrame()
+  BonChat.oldChatClose(...)
 end
 
 local panelMeta = FindMetaTable("Panel")
 local blur = Material("pp/blurscreen")
 
--- custom panel function
+-- custom panel function for drawing blurred background
 panelMeta.DrawBlur = function(self, layers, density, alpha)
   surface.SetDrawColor(255, 255, 255, alpha)
   surface.SetMaterial(blur)

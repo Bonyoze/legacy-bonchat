@@ -2,6 +2,10 @@ return [[<html>
   <head>
     <title>BonChat Chatbox</title>
     <style>
+      .hide-element, .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+
       html, body {
         margin: 0;
         overflow: hidden;
@@ -41,9 +45,6 @@ return [[<html>
       #chatbox::-webkit-scrollbar-thumb {
         background: rgb(30,30,30);
         border-radius: 4px;
-      }
-      #chatbox:first-child {
-        margin-top: auto;
       }
 
       #entry {
@@ -645,13 +646,23 @@ return [[<html>
         }
       });
 
-    // prevent page redirects and call lua function to open url
     $(document)
-      .on("click", function(e) {
+      .on("panelopen", function() { // custom trigger for handling when the panel is opened
+        chatbox.removeClass("hide-scrollbar");
+        entry.removeClass("hide-element");
+        entry.focus(); // focus so the user can type in it
+      })
+      .on("panelclose", function() { // custom trigger for handling when the panel is closed
+        chatbox.addClass("hide-scrollbar");
+        entry.addClass("hide-element");
+        entry.text(''); // clear the entry
+        scrollToBottom(); // reset scroll
+      })
+      .on("click", function(e) { // prevent page redirects and instead call a lua function
         var elem = $(e.target),
         url = elem.attr("href") || elem.parents().attr("href");
         if (url) {
-          event.preventDefault();
+          event.preventDefault(); // prevent redirect
           if (elem.is("img"))
             glua.showImage(url,
               elem.prop("naturalWidth"),

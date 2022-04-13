@@ -3,9 +3,9 @@ AddCSLuaFile("bonchat/resources/chatbox.html.lua")
 AddCSLuaFile("bonchat/resources/popout.html.lua")
 AddCSLuaFile("bonchat/resources/emojis.json.lua")
 AddCSLuaFile("bonchat/vgui/frame.lua")
+AddCSLuaFile("bonchat/vgui/settings.lua")
 AddCSLuaFile("bonchat/vgui/chatbox.lua")
 AddCSLuaFile("bonchat/vgui/popout.lua")
-AddCSLuaFile("bonchat/vgui/settings.lua")
 
 util.AddNetworkString("BonChat_say")
 

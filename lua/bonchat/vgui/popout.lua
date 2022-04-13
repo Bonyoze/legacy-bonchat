@@ -64,4 +64,4 @@ local PANEL = {
   end
 }
 
-vgui.Register("BonChat_PopOut", PANEL, "DFrame")
+vgui.Register("BonChat_Popout", PANEL, "DFrame")
