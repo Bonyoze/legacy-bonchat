@@ -8,6 +8,7 @@
 - ➖ derma panels
   - ✅ frame
   - ✅ chatbox
+  - ✅ image pop out
   - ➖ settings
     - ❌ URL whitelist editing
     - ❌ max message render height
