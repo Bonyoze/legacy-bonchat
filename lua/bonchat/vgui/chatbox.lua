@@ -9,7 +9,7 @@ local PANEL = {
     
     -- get emoji data and send to panel
     self:Call(string.format(
-      "const EMOJI_DATA = JSON.parse(`%s`)",
+      "const TWEMOJI_DATA = JSON.parse('%s')",
       BonChat.GetResource("emojis.json")
     ))
   end

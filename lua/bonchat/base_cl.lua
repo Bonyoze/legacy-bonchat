@@ -75,7 +75,8 @@ end
 local panelMeta = FindMetaTable("Panel")
 local blur = Material("pp/blurscreen")
 
--- custom panel function for drawing blurred background
+-- custom panel functions
+
 panelMeta.DrawBlur = function(self, layers, density, alpha)
   surface.SetDrawColor(255, 255, 255, alpha)
   surface.SetMaterial(blur)

@@ -158,7 +158,7 @@ local PANEL = {
     -- need to request focus so the client can type in it
     self.chatbox:RequestFocus()
 
-    self:CallJS("$(document).trigger('panelopen')")
+    self:CallJS("CHATBOX_PANEL_OPEN()")
   end,
   CloseFrame = function(self)
     -- stop the chatbox panel from drawing over other panels (like the game menu)
@@ -179,7 +179,7 @@ local PANEL = {
     -- hide pop out frame
     self.popout:Hide()
 
-    self:CallJS("$(document).trigger('panelclose')")
+    self:CallJS("CHATBOX_PANEL_CLOSE()")
   end
 }
 

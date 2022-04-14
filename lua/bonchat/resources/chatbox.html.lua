@@ -2,10 +2,6 @@ return [[<html>
   <head>
     <title>BonChat Chatbox</title>
     <style>
-      .hide-element, .hide-scrollbar::-webkit-scrollbar {
-        display: none;
-      }
-
       html, body {
         margin: 0;
         overflow: hidden;
@@ -20,6 +16,15 @@ return [[<html>
         font-size: 1rem;
         line-height: 1.375rem;
         text-shadow: 1px 1px 1px #000, 1px 1px 2px #000;
+      }
+
+      /* hiding when chatbox is closed */
+
+      .chatbox-closed #entry {
+        display: none;
+      }
+      .chatbox-closed #chatbox::-webkit-scrollbar-track, .chatbox-closed #chatbox::-webkit-scrollbar-thumb, .chatbox-closed #chatbox .message {
+        background: transparent;
       }
 
       #chatbox {
@@ -79,21 +84,21 @@ return [[<html>
         border-bottom-right-radius: 4px;
       }
       .message:nth-child(odd) {
-        background-color: rgba(0,0,0,0.5);
+        background: rgba(0,0,0,0.5);
       }
       .message:nth-child(even) {
-        background-color: rgba(30,30,30,0.5);
+        background: rgba(30,30,30,0.5);
       }
       .message:hover {
-        background-color: rgba(0,0,0,0.25);
+        background: rgba(0,0,0,0.25);
       }
 
-      /* Markdown Styling */
+      /* markdown styling */
 
       .spoiler {
-        margin: -0.15em;
-        padding: 0.15em;
-        background-color: #000;
+        margin: -0.15rem;
+        padding: 0.15rem;
+        background: #000;
       }
       .spoiler span {
         opacity: 0;
@@ -111,18 +116,19 @@ return [[<html>
         margin-top: 4px;
       }
 
-      .imageAttachment img {
+      .image-attachment img {
         vertical-align: top;
+        display: inline-block;
         max-width: 100%;
         max-height: 200px;
         border-radius: 4px;
       }
 
       .emoji {
+        vertical-align: top;
         display: inline-block;
-        width: 1.375em;
-        height: 1.375em;
-        vertical-align: bottom;
+        width: 1.375rem;
+        height: 1.375rem;
       }
     </style>
   </head>
@@ -180,9 +186,12 @@ return [[<html>
   </script>
   <script> // emojis script
     function getEmojiByShortcode(shortcode) {
-      // EMOJI_DATA constant is set by GLua
-      if (EMOJI_DATA) return EMOJI_DATA[shortcode];
+      // TWEMOJI_DATA constant is set by GLua
+      if (TWEMOJI_DATA) return TWEMOJI_DATA[shortcode];
     }
+
+    // used in markdown parsing as a fallback for what platform to get emojis from
+    const EMOJI_DEFAULT_PLATFORM = "discord";
 
     // twemoji
     
@@ -227,8 +236,19 @@ return [[<html>
     }
 
     // discord emojis
+
+    const DISCORD_EMOJI_BASE = "https://cdn.discordapp.com/emojis/";
+
     function buildDiscordEmojiURL(id, animated) {
-      return "https://cdn.discordapp.com/emojis/" + id + "." + (animated ? "gif" : "png");
+      return DISCORD_EMOJI_BASE + id + "." + (animated ? "gif" : "png");
+    }
+
+    // steam emojis
+
+    const STEAM_EMOJI_BASE = "https://steamcommunity-a.akamaihd.net/economy/emoticon/";
+
+    function buildSteamEmojiURL(name) {
+      return STEAM_EMOJI_BASE + name;
     }
   </script>
   <script> // markdown script
@@ -311,26 +331,42 @@ return [[<html>
           return htmlTag("span", htmlTag("span", output(node.content)), { class: "spoiler" });
         }
       },
-      twemoji_emoji: {
-        match: /^:([^\s:]+):/,
+      emoji: {
+        match: /^(?::([^\s:]+))?:([^\s:]+):/,
         parse: function(capture) {
           return {
-            name: capture[1]
+            platform: capture[1],
+            name: capture[2]
           };
         },
         html: function(node) {
-          var char = getEmojiByShortcode(node.name);
-          if (char) {
-            return htmlTag("img", "", {
-              class: "emoji",
-              src: buildTwemojiURL(char),
-              alt: char
-            });
-          } else
-            return ":" + node.name + ":";
+          var text = (node.platform ? ":" + node.platform : "") + ":" + node.name + ":";
+          switch (node.platform ? node.platform.toLowerCase() : EMOJI_DEFAULT_PLATFORM) {
+            case "discord": // twemoji isn't really a platform but discord is and it's well-known for using it
+            case "d":
+              var char = getEmojiByShortcode(node.name);
+              if (char) {
+                return htmlTag("span", text, {
+                  class: "pre-emoji",
+                  src: buildTwemojiURL(char)
+                });
+              } else
+                return text;
+            case "steam":
+            case "s":
+              return htmlTag("span", text, {
+                  class: "pre-emoji",
+                  src: buildSteamEmojiURL(node.name)
+                });
+            case "twitch":
+            case "t":
+              return text; // WIP
+            default:
+              return text;
+          }
         }
       },
-      discord_emoji: {
+      /*discord_emoji: {
         match: /^<(a?):(\w+):(\d+)>/,
         parse: function(capture) {
           return {
@@ -346,7 +382,7 @@ return [[<html>
             alt: "<" + (node.animated ? "a" : "") + ":" + node.name + ":" + node.id + ">"
           });
         }
-      },
+      },*/
       autolink: {
         match: /^<([^:\s>]+:\/\/[^\s>]+)>/,
         parse: function(capture) {
@@ -565,37 +601,61 @@ return [[<html>
         this.elem.appendTo(chatbox);
         if (scrolled) scrollToBottom();
 
+        // load attachments
         this.elem.find(".link").each(function() {
           var elem = $(this);
           if (!elem.parents(".spoiler").length) {
             var url = elem.attr("href");
             if (url && isWhitelistedURL(url)) {
-              checkImageContent(url, function() { // check if content from url can be displayed using an image
-                var scrolled = isFullyScrolled();
-                // build image attachment
-                $("<div class='attachment imageAttachment'>")
-                  .append($("<a>")
-                    .attr("href", url)
-                    .append($("<img>")
-                      .attr("src", url)
-                      .attr("alt", url)
+              // try to load the image
+              var img = $("<img>")
+                .on("load", function() {
+                  var scrolled = isFullyScrolled();
+
+                  // build image attachment using the loaded image
+                  $("<div class='attachment image-attachment'>")
+                    .append($("<a>")
+                      .attr("href", url)
+                      .append(img.attr("alt", url))
                     )
-                  )
-                  .appendTo(elem.closest(".message"));
-                elem.remove(); // remove the link
-                if (scrolled) scrollToBottom();
-              });
+                    .appendTo(elem.closest(".message"));
+
+                  elem.remove(); // remove the link
+
+                  if (scrolled) scrollToBottom();
+                })
+                .on("error", function() { img.remove(); })
+                .attr("src", url);
             }
           }
         });
+
+        // load emojis
+        this.elem.find(".pre-emoji").each(function() {
+          var elem = $(this),
+          img = $("<img>")
+            .on("load", function() {
+              img.off();
+              // replace it with the loaded image
+              elem.replaceWith(img.addClass("emoji"));
+            })
+            .on("error", function() { img.remove(); })
+            .attr("src", elem.attr("src"));
+        })
       }
     }
 
     function checkImageContent(src, success, fail) {
-      var e = $("<img>");
-      e.on("load", success);
-      e.on("error", fail);
-      e.attr("src", src);
+      var img = $("<img>")
+        .on("load", function() {
+          img.remove();
+          success();
+        })
+        .on("error", function() {
+          img.remove();
+          fail();
+        })
+        .attr("src", src);
     }
 
     /*function checkVideoContent(src, success, fail) {
@@ -647,17 +707,6 @@ return [[<html>
       });
 
     $(document)
-      .on("panelopen", function() { // custom trigger for handling when the panel is opened
-        chatbox.removeClass("hide-scrollbar");
-        entry.removeClass("hide-element");
-        entry.focus(); // focus so the user can type in it
-      })
-      .on("panelclose", function() { // custom trigger for handling when the panel is closed
-        chatbox.addClass("hide-scrollbar");
-        entry.addClass("hide-element");
-        entry.text(''); // clear the entry
-        scrollToBottom(); // reset scroll
-      })
       .on("click", function(e) { // prevent page redirects and instead call a lua function
         var elem = $(e.target),
         url = elem.attr("href") || elem.parents().attr("href");
@@ -674,5 +723,15 @@ return [[<html>
             glua.openURL(url);
         }
       });
+
+    const CHATBOX_PANEL_OPEN = function() {
+      $("html").removeClass("chatbox-closed");
+      entry.focus(); // focus so the user can type in it
+    },
+    CHATBOX_PANEL_CLOSE = function() {
+      $("html").addClass("chatbox-closed");
+      entry.text(''); // clear the entry
+      scrollToBottom(); // reset scroll
+    }
   </script>
 </html>]]
