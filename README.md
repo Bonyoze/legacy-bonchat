@@ -26,7 +26,7 @@
     - ✅ Twemoji
     - ✅ Steam
     - ✅ Discord
-    - ❌ Twitch (may not add)
+    - ❓ Twitch (might not be implemented)
   - ➖ ability to show images/videos
   - ❌ chatbox input markdown
 - ➖ server
