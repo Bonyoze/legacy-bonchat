@@ -476,7 +476,7 @@ return [[<html>
       br: {
         match: /^\n/,
         parse: function() {
-          return;
+          return {};
         },
         html: function() {
           return "<br>";
