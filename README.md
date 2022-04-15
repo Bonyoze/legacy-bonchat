@@ -40,7 +40,9 @@
 ---
 
 ### Acknowledgements
-- [simple-markdown](https://github.com/Khan/simple-markdown) *(parsing markdown to HTML)*
-- [discord-emoji](https://github.com/amethyst-studio/discord_emoji) *(emoji shortcode data)*
-- [Twemoji](https://twemoji.twitter.com) *(Twemoji api for emoji support)*
-- [Discord](https://discord.com) *(Discord api for emoji support)*
+- [Khan/simple-markdown](https://github.com/Khan/simple-markdown) *(code for parsing markdown to HTML)*
+- [amethyst-studio/discord-emoji](https://github.com/amethyst-studio/discord_emoji) *(emoji shortcode data)*
+- [twitter/twemoji](https://github.com/twitter/twemoji) *(code for parsing twemojis)*
+- [Twemoji](https://twemoji.twitter.com) *(emoji api)*
+- [Steam](https://store.steampowered.com) *(emoji api)*
+- [Discord](https://discord.com) *(emoji api)*
