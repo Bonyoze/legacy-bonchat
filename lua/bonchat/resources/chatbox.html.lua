@@ -366,23 +366,24 @@ return [[<html>
           }
         }
       },
-      /*discord_emoji: {
-        match: /^<(a?):(\w+):(\d+)>/,
+      discord_emoji: {
+        match: /^(<(a?):(\w+):(\d+)>)/,
         parse: function(capture) {
           return {
-            animated: capture[1] == "a",
-            name: capture[2],
-            id: capture[3]
+            originalText: capture[1],
+            animated: capture[2] == "a",
+            name: capture[3], // this isn't even needed to get the Discord emoji
+            id: capture[4]
           };
         },
         html: function(node) {
-          return htmlTag("img", "", {
-            class: "emoji",
-            src: buildDiscordEmojiURL(node.id, node.animated),
-            alt: "<" + (node.animated ? "a" : "") + ":" + node.name + ":" + node.id + ">"
+          var text = sanitizeText(node.originalText);
+          return htmlTag("span", text, {
+            class: "pre-emoji",
+            src: buildDiscordEmojiURL(node.id, node.animated)
           });
         }
-      },*/
+      },
       autolink: {
         match: /^<([^:\s>]+:\/\/[^\s>]+)>/,
         parse: function(capture) {
