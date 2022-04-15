@@ -12,7 +12,7 @@
 - ➖ derma panels
   - ✅ frame
   - ✅ chatbox
-  - ✅ image pop out
+  - ➖ browser pop out
   - ➖ settings
     - ❌ URL whitelist editing
     - ❌ max message render height
@@ -27,7 +27,11 @@
     - ✅ Steam
     - ✅ Discord
     - ❓ Twitch (might not be implemented)
-  - ➖ ability to show images/videos
+  - ➖ attachment embedding
+    - ✅ images
+    - ➖ videos
+    - ➖ audio
+    - ❌ links
   - ❌ chatbox input markdown
 - ➖ server
   - ➖ convars for message char limit and send cooldown
