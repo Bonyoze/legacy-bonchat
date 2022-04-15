@@ -72,7 +72,7 @@ return [[<html>
         padding: 4px;
         white-space: pre-wrap;
         word-wrap: break-word;
-        max-height: 250px;
+        /*max-height: 250px;*/
         overflow-x: hidden;
       }
       .message:first-child {
