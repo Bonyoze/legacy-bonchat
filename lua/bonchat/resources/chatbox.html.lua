@@ -635,7 +635,10 @@ return [[<html>
             .on("load", function() {
               img.off();
               // replace it with the loaded image
-              pre.replaceWith(img.addClass("emoji"));
+              pre.replaceWith(img
+                .addClass("emoji")
+                .attr("alt", pre.text())
+              );
             })
             .on("error", function() { img.remove(); })
             .attr("src", url);
