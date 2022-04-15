@@ -137,11 +137,7 @@ return [[<html>
   </body>
   <script type="text/javascript" src="asset://garrysmod/html/js/thirdparty/jquery.js"></script>
   <script> // whitelist script
-    const WHITELIST_PROTOCOLS = [
-      "https",
-      "http"
-    ],
-    WHITELIST_DOMAINS = [
+    const WHITELIST_DOMAINS = [
       // Steam
       "cdn.akamai.steamstatic.com",
       // Discord
@@ -156,31 +152,13 @@ return [[<html>
       "i.imgur.com",
       // Tenor
       "tenor.com"
-    ],
-    WHITELIST_FORMATS = [
-      "png",
-      "jpg", "jpeg",
-      "gif",
-      "mp4",
-      "webm",
-      "ogg",
-      "mp3",
-      "wav"
     ];
 
     function isWhitelistedURL(href) {
       var url = document.createElement("a");
       url.href = href;
-
-      var protocol = url.protocol.slice(0, -1),
-      domain = url.hostname + url.pathname,
-      format = url.pathname.split("/");
-      format = format[format.length - 1].split(".");
-      format = format[format.length - 1];
-
-      return WHITELIST_PROTOCOLS.some(function(x) { return x == protocol; })
-        && WHITELIST_DOMAINS.some(function(x) { return domain.substring(0, x.length) == x; })
-        && WHITELIST_FORMATS.some(function(x) { return x == format; });
+      var domain = url.hostname + url.pathname;
+      return WHITELIST_DOMAINS.some(function(x) { return domain.substring(0, x.length) == x; });
     }
   </script>
   <script> // emojis script
@@ -385,7 +363,7 @@ return [[<html>
         }
       },
       autolink: {
-        match: /^<([^:\s>]+:\/\/[^\s>]+)>/,
+        match: /^<([^: >]+:\/[^ >]+)>/,
         parse: function(capture) {
           return {
             content: capture[1]
@@ -396,7 +374,7 @@ return [[<html>
         }
       },
       url: {
-        match: /^([^:\s]+:\/\/\S+)/,
+        match: /^(https?:\/\/[^\s<]+[^<.,:;"')\]\s])/,
         parse: function(capture) {
           return {
             content: capture[1]
