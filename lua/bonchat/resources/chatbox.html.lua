@@ -580,74 +580,100 @@ return [[<html>
       e.scrollTop = e.scrollHeight;
     }
 
-    function getMessageByID(id) {
-      return $(".message[message-id='" + id + "']");
-    }
-
-    var msgID = 0;
-
     function Message() {
-      this.elem = $("<div class='message'>");
+      this.MAX_ATTACHMENTS = 10;
+
+      this.MSG_CONTAINER = $("<div class='message'>");
+      this.MSG_CONTENT = $("<div class='message-content'>").appendTo(this.MSG_CONTAINER);
+      this.MSG_ATTACHMENTS = $("<div class='message-attachments'>").appendTo(this.MSG_CONTAINER);
+      
       this.textColor = "#97d3ff"; // this is the default text color
+
       this.setTextColor = function(str) {
         if (str) this.textColor = str;
       };
       this.appendText = function(str) {
         var markdownHTML = outputHTML(nestedParse(str));
-        this.elem.append(
+        this.MSG_CONTENT.append(
           $("<span>")
             .html(markdownHTML)
             .css("color", this.textColor)
         );
       };
-      this.send = function() {
-        var scrolled = isFullyScrolled();
-        this.elem.appendTo(chatbox);
-        if (scrolled) scrollToBottom();
+      this._loadAttachments = function() {
+        var maxAttachments = this.MAX_ATTACHMENTS,
+        attachments = this.MSG_ATTACHMENTS,
+        links = this.MSG_CONTAINER.find(".link"),
+        index = 0;
 
-        // load attachments
-        this.elem.find(".link").each(function() {
-          var elem = $(this);
-          if (!elem.parents(".spoiler").length) {
-            var url = elem.attr("href");
-            if (url && isWhitelistedURL(url)) {
-              // try to load the image
-              var img = $("<img>")
-                .on("load", function() {
-                  var scrolled = isFullyScrolled();
+        // use recursion to load attachments one after the other
+        function load() {
+          if (attachments.children().length >= maxAttachments) return;
 
-                  // build image attachment using the loaded image
-                  $("<div class='attachment image-attachment'>")
-                    .append($("<a>")
-                      .attr("href", url)
-                      .append(img.attr("alt", url))
-                    )
-                    .appendTo(elem.closest(".message"));
+          var link = links.get(index++);
+          if (link) {
+            link = $(link);
 
-                  elem.remove(); // remove the link
+            if (!link.parents(".spoiler").length) {
+              var url = link.attr("href");
+              if (url && isWhitelistedURL(url)) {
+                // try to load the image
+                var img = $("<img>")
+                  .on("load", function() { // image loaded, add the attachment
+                    img.off();
 
-                  if (scrolled) scrollToBottom();
-                })
-                .on("error", function() { img.remove(); })
-                .attr("src", url);
+                    var scrolled = isFullyScrolled();
+                    attachments.append(
+                      // build image attachment using the loaded image
+                      $("<div class='attachment image-attachment'>")
+                        .append($("<a>")
+                          .attr("href", url)
+                          .append(img.attr("alt", url))
+                        )
+                    );
+                    link.remove();
+                    if (scrolled) scrollToBottom();
+                    
+                    // try to load next link
+                    load();
+                  })
+                  .on("error", function() { // failed to load image, try to load next link
+                    img.remove();
+                    load();
+                  })
+                  .attr("src", url);
+              } else // not whitelisted, try to load next link
+                load();
             }
           }
-        });
-
-        // load emojis
-        this.elem.find(".pre-emoji").each(function() {
-          var elem = $(this),
+        }
+        load();
+      };
+      this._loadEmojis = function() {
+        this.MSG_CONTAINER.find(".pre-emoji").each(function() {
+          var pre = $(this),
           img = $("<img>")
             .on("load", function() {
               img.off();
               // replace it with the loaded image
-              elem.replaceWith(img.addClass("emoji"));
+              pre.replaceWith(img.addClass("emoji"));
             })
             .on("error", function() { img.remove(); })
-            .attr("src", elem.attr("src"));
-        })
+            .attr("src", pre.attr("src"));
+        });
+      };
+      this.send = function() {
+        var scrolled = isFullyScrolled();
+        this.MSG_CONTAINER.appendTo(chatbox);
+        if (scrolled) scrollToBottom();
+
+        // load attachments
+        this._loadAttachments();
+
+        // load emojis
+        this._loadEmojis();
       }
-    }
+    };
 
     function checkImageContent(src, success, fail) {
       var img = $("<img>")
