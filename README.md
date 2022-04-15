@@ -1,7 +1,11 @@
 # gmod-bonchat
-### A chatbox for Garry's Mod with markdown support, emoji support, ability to show images/videos, and some other stuff (WIP)
+#### A chatbox for Garry's Mod with markdown support, emoji support, ability to show images/videos, and some other stuff (WIP)
 
 ![bonchat](https://user-images.githubusercontent.com/59924045/162588003-f9e06f1d-2a97-4b13-b46a-e37cfe9a57bb.png)
+
+*Should work on any branch, but intended for usage on `x86-64`*
+
+---
 
 ### To Do:
 `✅Finished` `➖Started on` `❌Not started`
@@ -18,12 +22,18 @@
   - ❌ message context popup
 - ➖ message sending
   - ✅ inline markdown support
-  - ✅ emoji support from Twemoji and Discord
+  - ✅ emoji support
+    - ✅ Twemoji
+    - ✅ Steam
+    - ✅ Discord
+    - ❌ Twitch (may not add)
   - ➖ ability to show images/videos
-  - ❌ render markdown in text entry
-- ➖ server/api stuff
+  - ❌ chatbox input markdown
+- ➖ server
   - ➖ convars for message char limit and send cooldown
+- ➖ api stuff
 
+---
 
 ### Acknowledgements
 - [simple-markdown](https://github.com/Khan/simple-markdown) *(parsing markdown to HTML)*
