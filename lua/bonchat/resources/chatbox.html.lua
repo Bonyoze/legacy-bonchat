@@ -167,9 +167,6 @@ return [[<html>
       if (TWEMOJI_DATA) return TWEMOJI_DATA[shortcode];
     }
 
-    // used in markdown parsing as a fallback for what platform to get emojis from
-    const EMOJI_DEFAULT_PLATFORM = "discord";
-
     // twemoji
     
     const TWEMOJI_VERSION = "14.0.2",
@@ -319,9 +316,8 @@ return [[<html>
         },
         html: function(node) {
           var text = sanitizeText(node.originalText);
-          switch (node.platform ? node.platform.toLowerCase() : EMOJI_DEFAULT_PLATFORM) {
-            case "discord": // twemoji isn't really a platform but discord is and it's well-known for using it
-            case "d":
+          switch (node.platform ? node.platform.toLowerCase() : null) {
+            case null: // use twemoji if not set
               var char = getEmojiByShortcode(node.name);
               if (char) {
                 return htmlTag("span", text, {
