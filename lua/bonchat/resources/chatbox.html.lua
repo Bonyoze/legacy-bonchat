@@ -580,7 +580,7 @@ return [[<html>
     }
 
     function Message() {
-      this.MAX_ATTACHMENTS = 10;
+      this.MAX_ATTACHMENTS = 5;
 
       this.MSG_CONTAINER = $("<div class='message'>");
       this.MSG_CONTENT = $("<div class='message-content'>").appendTo(this.MSG_CONTAINER);
@@ -602,55 +602,56 @@ return [[<html>
       this._loadAttachments = function() {
         var maxAttachments = this.MAX_ATTACHMENTS,
         attachments = this.MSG_ATTACHMENTS,
-        links = this.MSG_CONTAINER.find(".link"),
-        index = 0;
+        links = this.MSG_CONTAINER.find(".link").slice(0, this.MAX_ATTACHMENTS);
+        
+        // keep only whitelisted links
+        links = links.filter(function() {
+          var url = $(this).attr("href");
+          return url && isWhitelistedURL(url);
+        });
 
-        // use recursion to load attachments one after the other
-        function load() {
-          if (attachments.children().length >= maxAttachments) return;
+        // remove duplicate links
+        var urls = {};
+        links = links.filter(function() {
+          var url = $(this).attr("href");
+          return urls.hasOwnProperty(url) ? false : urls[url] = true;
+        });
 
-          var link = links.get(index++);
-          if (link) {
-            link = $(link);
+        // load the attachments
+        links.each(function(index) {
+          var link = $(this),
+          url = $(this).attr("href");
 
-            if (!link.parents(".spoiler").length) {
-              var url = link.attr("href");
-              if (url && isWhitelistedURL(url)) {
-                // try to load the image
-                var img = $("<img>")
-                  .on("load", function() { // image loaded, add the attachment
-                    img.off();
-
-                    var scrolled = isFullyScrolled();
-                    attachments.append(
-                      // build image attachment using the loaded image
-                      $("<div class='attachment image-attachment'>")
-                        .append($("<a>")
-                          .attr("href", url)
-                          .append(img.attr("alt", url))
-                        )
-                    );
-                    link.remove();
-                    if (scrolled) scrollToBottom();
-                    
-                    // try to load next link
-                    load();
-                  })
-                  .on("error", function() { // failed to load image, try to load next link
-                    img.remove();
-                    load();
-                  })
-                  .attr("src", url);
-              } else // not whitelisted, try to load next link
-                load();
-            }
-          }
-        }
-        load();
+          // try to load the attachment
+          var attachmentContainer = $("<div class='attachment image-attachment'>").appendTo(attachments),
+          // append first so the order of the attachments doesn't mix up incase they load faster than any before it
+          img = $("<img>")
+            .on("load", function() { // image loaded
+              img.off();
+              
+              var scrolled = isFullyScrolled();
+              attachments.append(
+                // setup attachment using the loaded image
+                attachmentContainer
+                  .append($("<a>")
+                    .attr("href", url)
+                    .append(img.attr("alt", url))
+                  )
+              );
+              link.remove();
+              if (scrolled) scrollToBottom();
+            })
+            .on("error", function() { // failed to load image
+              attachmentContainer.remove()
+              img.remove();
+            })
+            .attr("src", url);
+        });
       };
       this._loadEmojis = function() {
         this.MSG_CONTAINER.find(".pre-emoji").each(function() {
           var pre = $(this),
+          url = pre.attr("src"),
           img = $("<img>")
             .on("load", function() {
               img.off();
@@ -658,7 +659,7 @@ return [[<html>
               pre.replaceWith(img.addClass("emoji"));
             })
             .on("error", function() { img.remove(); })
-            .attr("src", pre.attr("src"));
+            .attr("src", url);
         });
       };
       this.send = function() {
