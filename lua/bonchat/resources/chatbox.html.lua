@@ -107,16 +107,15 @@ return [[<html>
         opacity: 1;
       }
 
-      .link {
+      a.link {
         color: #00aff4;
       }
 
-      .attachment {
-        display: block;
+      div.attachment {
         margin-top: 4px;
       }
 
-      .image-attachment img {
+      div.image-attachment img {
         vertical-align: top;
         display: inline-block;
         max-width: 100%;
@@ -124,7 +123,7 @@ return [[<html>
         border-radius: 4px;
       }
 
-      .emoji {
+      img.emoji {
         vertical-align: top;
         display: inline-block;
         width: 1.375rem;
