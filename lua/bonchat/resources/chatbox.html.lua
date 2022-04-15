@@ -332,15 +332,16 @@ return [[<html>
         }
       },
       emoji: {
-        match: /^(?::([^\s:]+))?:([^\s:]+):/,
+        match: /^((?::([^\s:]+))?:([^\s:]+):)/,
         parse: function(capture) {
           return {
-            platform: capture[1],
-            name: capture[2]
+            originalText: capture[1],
+            platform: capture[2],
+            name: capture[3]
           };
         },
         html: function(node) {
-          var text = (node.platform ? ":" + node.platform : "") + ":" + node.name + ":";
+          var text = sanitizeText(node.originalText);
           switch (node.platform ? node.platform.toLowerCase() : EMOJI_DEFAULT_PLATFORM) {
             case "discord": // twemoji isn't really a platform but discord is and it's well-known for using it
             case "d":
@@ -450,22 +451,25 @@ return [[<html>
         }
       },
       color: {
-        match: /^\$([a-z0-9]+)\$?/i,
+        match: /^(\$([a-z0-9,]+)\$?)/i,
         parse: function(capture) {
           return {
-            content: capture[1]
+            originalText: capture[1],
+            content: capture[2]
           };
         },
         html: function(node) {
-          if (/^([0-9a-f]{6}|[0-9a-f]{3})$/i.test(node.content))
-            return htmlTag("font", null, { color: "#" + node.content }, false);
+          if (/^\d{1,3},\d{1,3},\d{1,3}/.test(node.content))
+            return htmlTag("span", null, { style: "color:rgb(" + node.content + ")" }, false);
+          else if (/^([0-9a-f]{6}|[0-9a-f]{3})$/i.test(node.content))
+            return htmlTag("span", null, { style: "color:#" + node.content }, false);
           else {
             var s = new Option().style;
             s.color = node.content;
-            if (s.color !== "")
-              return htmlTag("font", null, { color: node.content }, false);
+            if (s.color)
+              return htmlTag("span", null, { style: "color:" + node.content }, false);
             else
-              return "$" + node.content;
+              return sanitizeText(node.originalText);
           }
         }
       },
