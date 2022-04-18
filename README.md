@@ -1,14 +1,18 @@
 # gmod-bonchat
-### A chatbox for Garry's Mod with markdown support, emoji support, ability to show images/videos, and some other stuff (WIP)
+#### A chatbox for Garry's Mod with markdown support, emoji support, ability to show images/videos, and some other stuff (WIP)
 
 ![bonchat](https://user-images.githubusercontent.com/59924045/162588003-f9e06f1d-2a97-4b13-b46a-e37cfe9a57bb.png)
+
+*Should work on any branch, but intended for usage on `x86-64`*
+
+---
 
 ### To Do:
 `✅Finished` `➖Started on` `❌Not started`
 - ➖ derma panels
   - ✅ frame
   - ✅ chatbox
-  - ✅ image pop out
+  - ➖ browser pop out
   - ➖ settings
     - ❌ URL whitelist editing
     - ❌ max message render height
@@ -18,15 +22,27 @@
   - ❌ message context popup
 - ➖ message sending
   - ✅ inline markdown support
-  - ✅ emoji support from Twemoji and Discord
-  - ➖ ability to show images/videos
-  - ❌ render markdown in text entry
-- ➖ server/api stuff
+  - ✅ emoji support
+    - ✅ Twemoji
+    - ✅ Steam
+    - ✅ Discord
+    - ❓ Twitch (might not be implemented)
+  - ➖ attachment embedding
+    - ✅ images
+    - ➖ videos
+    - ➖ audio
+    - ❌ links
+  - ❌ chatbox input markdown
+- ➖ server
   - ➖ convars for message char limit and send cooldown
+- ➖ api stuff
 
+---
 
 ### Acknowledgements
-- [simple-markdown](https://github.com/Khan/simple-markdown) *(parsing markdown to HTML)*
-- [discord-emoji](https://github.com/amethyst-studio/discord_emoji) *(emoji shortcode data)*
-- [Twemoji](https://twemoji.twitter.com) *(Twemoji api for emoji support)*
-- [Discord](https://discord.com) *(Discord api for emoji support)*
+- [Khan/simple-markdown](https://github.com/Khan/simple-markdown) *(code for parsing markdown to HTML)*
+- [amethyst-studio/discord-emoji](https://github.com/amethyst-studio/discord_emoji) *(emoji shortcode data)*
+- [twitter/twemoji](https://github.com/twitter/twemoji) *(code for parsing twemojis)*
+- [Twemoji](https://twemoji.twitter.com) *(emoji api)*
+- [Steam](https://store.steampowered.com) *(emoji api)*
+- [Discord](https://discord.com) *(emoji api)*
