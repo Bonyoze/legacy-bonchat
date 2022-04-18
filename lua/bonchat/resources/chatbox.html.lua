@@ -93,6 +93,18 @@ return [[<html>
         background: rgba(0,0,0,0.25);
       }
 
+      /* centered styling */
+
+      .message.center-content > .message-content {
+        display: table;
+        margin: 0 auto;
+        text-align: center;
+      }
+      .message.center-attachments > .message-attachments {
+        display: table;
+        margin: 0 auto;
+      }
+
       /* markdown styling */
 
       .spoiler {
@@ -129,6 +141,11 @@ return [[<html>
         width: 1.375rem;
         height: 1.375rem;
       }
+      .emoji.jumbo {
+        width: 3em;
+        height: 3em;
+      }
+      
     </style>
   </head>
   <body>
@@ -167,12 +184,10 @@ return [[<html>
       if (TWEMOJI_DATA) return TWEMOJI_DATA[shortcode];
     }
 
-    // twemoji
-    
-    const TWEMOJI_VERSION = "14.0.2",
-    TWEMOJI_FOLDER = "svg",
-    TWEMOJI_EXT = ".svg",
-    TWEMOJI_BASE = "https://twemoji.maxcdn.com/v/" + TWEMOJI_VERSION + "/" + TWEMOJI_FOLDER + "/";
+    const TWEMOJI_BASE = "https://twemoji.maxcdn.com/v/14.0.2/svg/",
+    DISCORD_EMOJI_BASE = "https://cdn.discordapp.com/emojis/",
+    STEAM_EMOJI_BASE = "https://steamcommunity-a.akamaihd.net/economy/emoticon/",
+    SILKICON_BASE = "asset://garrysmod/materials/icon16/";
 
     const UFE0Fg = /\uFE0F/g,
     U200D = String.fromCharCode(0x200D);
@@ -205,24 +220,22 @@ return [[<html>
       );
     }
 
+    // emoji sources
+
     function buildTwemojiURL(char) {
-      return TWEMOJI_BASE + grabTheRightIcon(char) + TWEMOJI_EXT;
+      return TWEMOJI_BASE + grabTheRightIcon(char) + ".svg";
     }
-
-    // discord emojis
-
-    const DISCORD_EMOJI_BASE = "https://cdn.discordapp.com/emojis/";
 
     function buildDiscordEmojiURL(id, animated) {
       return DISCORD_EMOJI_BASE + id + "." + (animated ? "gif" : "png");
     }
 
-    // steam emojis
-
-    const STEAM_EMOJI_BASE = "https://steamcommunity-a.akamaihd.net/economy/emoticon/";
-
     function buildSteamEmojiURL(name) {
       return STEAM_EMOJI_BASE + name;
+    }
+
+    function buildSilkiconURL(name) {
+      return SILKICON_BASE + name + ".png";
     }
   </script>
   <script> // markdown script
@@ -310,13 +323,13 @@ return [[<html>
         parse: function(capture) {
           return {
             originalText: capture[1],
-            platform: capture[2],
+            source: capture[2],
             name: capture[3]
           };
         },
         html: function(node) {
           var text = sanitizeText(node.originalText);
-          switch (node.platform ? node.platform.toLowerCase() : null) {
+          switch (node.source ? node.source.toLowerCase() : null) {
             case null: // use twemoji if not set
               var char = getEmojiByShortcode(node.name);
               if (char) {
@@ -332,6 +345,12 @@ return [[<html>
                   class: "pre-emoji",
                   src: buildSteamEmojiURL(node.name)
                 });
+            case "icon":
+            case "i":
+              return htmlTag("span", text, {
+                class: "pre-emoji",
+                src: buildSilkiconURL(node.name)
+              })
             case "twitch":
             case "t":
               return text; // WIP
@@ -579,17 +598,11 @@ return [[<html>
         attachments = this.MSG_ATTACHMENTS,
         links = this.MSG_CONTAINER.find(".link").slice(0, this.MAX_ATTACHMENTS);
         
-        // keep only whitelisted links
+        // keep only whitelisted links and remove duplicates
+        var seen = {}
         links = links.filter(function() {
           var url = $(this).attr("href");
-          return url && isWhitelistedURL(url);
-        });
-
-        // remove duplicate links
-        var urls = {};
-        links = links.filter(function() {
-          var url = $(this).attr("href");
-          return urls.hasOwnProperty(url) ? false : urls[url] = true;
+          return url && !seen.hasOwnProperty(url) && isWhitelistedURL(url) ? seen[url] = true : false;
         });
 
         // load the attachments
@@ -597,14 +610,15 @@ return [[<html>
           var link = $(this),
           url = $(this).attr("href");
 
+          var scrolled = isFullyScrolled();
+
           // try to load the attachment
           var attachmentContainer = $("<div class='attachment image-attachment'>").appendTo(attachments),
           // append first so the order of the attachments doesn't mix up incase they load faster than any before it
           img = $("<img>")
             .on("load", function() { // image loaded
               img.off();
-              
-              var scrolled = isFullyScrolled();
+
               attachments.append(
                 // setup attachment using the loaded image
                 attachmentContainer
@@ -641,6 +655,11 @@ return [[<html>
         });
       };
       this.send = function() {
+        // add some data
+        this.MSG_CONTAINER.data({
+          sendTime: Date.now()
+        })
+
         var scrolled = isFullyScrolled();
         this.MSG_CONTAINER.appendTo(chatbox);
         if (scrolled) scrollToBottom();
@@ -732,11 +751,11 @@ return [[<html>
         }
       });
 
-    const CHATBOX_PANEL_OPEN = function() {
+    function CHATBOX_PANEL_OPEN() {
       $("html").removeClass("chatbox-closed");
       entry.focus(); // focus so the user can type in it
-    },
-    CHATBOX_PANEL_CLOSE = function() {
+    }
+    function CHATBOX_PANEL_CLOSE() {
       $("html").addClass("chatbox-closed");
       entry.text(''); // clear the entry
       scrollToBottom(); // reset scroll

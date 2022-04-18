@@ -16,7 +16,18 @@ end
 function BonChat.ReloadChat()
   if IsValid(BonChat.frame) then BonChat.frame:Remove() end
   BonChat.frame = vgui.Create("BonChat_Frame")
-  chat.AddText(color_white, "BonChat has successfully loaded!")
+  BonChat.AppendMessage(
+    {
+      centerContent = true,
+      centerAttachments = true
+    },
+    color_white,
+    "$0000ff$:i:star: ***BonChat has successfully loaded!*** :i:star: https://media.discordapp.net/attachments/292328649711943680/883812645105446922/25.gif"
+  )
+end
+
+function BonChat.AppendMessage(options, ...)
+  BonChat.frame:AppendMessage(options, ...)
 end
 
 function BonChat.ClearChat()

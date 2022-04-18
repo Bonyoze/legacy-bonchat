@@ -2,6 +2,11 @@ include("bonchat/vgui/settings.lua")
 include("bonchat/vgui/chatbox.lua")
 include("bonchat/vgui/popout.lua")
 
+local msgOptions = {
+  centerContent = "center-content",
+  centerAttachments = "center-attachments"
+}
+
 local PANEL = {
   Init = function(self)
     self:SetSize(ScrW() * 0.25, ScrH() * 0.5)
@@ -22,7 +27,6 @@ local PANEL = {
     end
 
     self.settings = self:Add("BonChat_Settings")
-    self.settings:Hide()
 
     self.btnSettings = self:Add("DButton")
     self.btnSettings:SetSize(20, 20)
@@ -44,10 +48,6 @@ local PANEL = {
 
     -- seperate free-moving frame for showing websites/images
     self.popout = vgui.Create("BonChat_Popout")
-    self.OnRemove = function(self)
-      -- clean up panel
-      self.popout:Remove()
-    end
 
     -- fix scale of children on resize
     self.OnSizeChanged = function(self, w, h)
@@ -58,7 +58,7 @@ local PANEL = {
     local lastEscape = false
 
     hook.Add("Think", self, function()
-      if not self:IsVisible() then return end
+      if not self:IsKeyboardInputEnabled() then return end
 
       -- update position of children
 
@@ -110,10 +110,16 @@ local PANEL = {
     self:ReadyJS()
   end,
   AppendMessage = function(self, options, ...)
+    options = options or {}
     self:ReadyJS()
 
     -- create a new message object
     self:AddJS("var msg = new Message()")
+
+    for k, v in pairs(options) do
+      local opt = msgOptions[k]
+      if opt then self:AddJS("msg.MSG_CONTAINER.addClass('%s')", opt) end
+    end
 
     -- add the message components
     for _, v in ipairs({...}) do
@@ -155,6 +161,9 @@ local PANEL = {
     -- start painting frame
     self.Paint = self.openPaint
 
+    -- show parts
+    self.btnSettings:Show()
+
     -- need to request focus so the client can type in it
     self.chatbox:RequestFocus()
 
@@ -171,15 +180,16 @@ local PANEL = {
     -- stop painting the frame
     self.Paint = function() end
 
-    -- hide all children except for the chatbox panel
-    for _, v in ipairs(self:GetChildren()) do
-      if v ~= self.chatbox then v:Hide() end
-    end
-
-    -- hide pop out frame
+    -- hide parts
+    self.settings:Hide()
+    self.btnSettings:Hide()
     self.popout:Hide()
 
     self:CallJS("CHATBOX_PANEL_CLOSE()")
+  end,
+  OnRemove = function(self)
+    -- cleanup
+    self.popout:Remove()
   end
 }
 
