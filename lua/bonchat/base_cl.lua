@@ -127,12 +127,14 @@ local function initChatbox()
   BonChat.ReloadChat()
   BonChat.AppendMessage(
     {
-      centerContent = true,
-      noSelection = true,
-      noPointerEvents = true
+      contentCentered = true,
+      contentUnselectable = true,
+      attachmentsCentered = true,
+      attachmentsUnselectable = true,
+      attachmentsUntouchable = true
     },
     color_white,
-    ":icon:accept: **BonChat has successfully loaded**"
+    ":icon:accept: **BonChat has successfully loaded** https://media.discordapp.net/attachments/292328649711943680/883812645105446922/25.gif"
   )
 end
 

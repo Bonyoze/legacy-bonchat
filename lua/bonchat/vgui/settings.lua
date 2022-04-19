@@ -28,9 +28,8 @@ local PANEL = {
       BonChat.OpenChat(1)
       BonChat.AppendMessage(
         {
-          centerContent = true,
-          noSelection = true,
-          noPointerEvents = true
+          contentCentered = true,
+          contentUnselectable = true
         },
         color_white,
         ":icon:cog: **Chatbox was reloaded**"

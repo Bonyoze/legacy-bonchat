@@ -2,12 +2,27 @@ include("bonchat/vgui/settings.lua")
 include("bonchat/vgui/chatbox.lua")
 include("bonchat/vgui/popout.lua")
 
-local msgOptions = {
-  centerContent = "center-content",
-  centerAttachments = "center-attachments",
-  noSelection = "no-selection",
-  noPointerEvents = "no-pointer-events",
-  showTimestamp = "show-timestamp"
+--[[
+  AppendMessage Options
+
+  contentCentered       - true (horizontally centers the message text)
+  attachmentsCentered   - true (horizontally centers the message attachments)
+  contentUnselectable     - true (prevents text highlighting)
+  attachmentsUnselectable - true (prevents attachment highlighting)
+  contentUntouchable      - true (prevents mouse clicking from triggering on text)
+  attachmentsUntouchable  - true (prevents mouse clicks from triggering on attachments)
+  timestampShown       - true (shows a timestamp of when the message was sent)
+  sender              - player entity (used for identifying who sent the message)
+]]
+
+local optionClasses = {
+  contentCentered = "center-content",
+  attachmentsCentered = "center-attachments",
+  contentUnselectable = "unselect-content",
+  attachmentsUnselectable = "unselect-attachments",
+  contentUntouchable = "untouch-content",
+  attachmentsUntouchable = "untouch-attachments",
+  timestampShown = "show-timestamp"
 }
 
 local PANEL = {
@@ -93,7 +108,7 @@ local PANEL = {
     end)
 
     hook.Add("OnPlayerChat", self, function(self, ply, text, team)
-      self:AppendMessage({ showTimestamp = true }, IsValid(ply) and ply or "Console", color_white, ": " .. text)
+      self:AppendMessage({ sender = ply, timestampShown = true }, IsValid(ply) and ply or "**Console**", color_white, ": " .. text)
       BonChat.oldChatAddText(IsValid(ply) and ply or "Console", color_white, ": " .. text)
       return true
     end)
@@ -125,9 +140,19 @@ local PANEL = {
     self:AddJS("var msg = new Message()")
 
     -- apply options
+
     for k, v in pairs(options) do
-      local opt = msgOptions[k]
+      if v ~= true then continue end
+      local opt = optionClasses[k]
       if opt then self:AddJS("msg.MSG_CONTAINER.addClass('%s')", opt) end
+    end
+
+    if options.sender then
+      if IsValid(options.sender) then
+        self:AddJS("msg.MSG_CONTAINER.data('sender', '%s')", options.sender:SteamID())
+      else
+        self:AddJS("msg.MSG_CONTAINER.data('sender', null)")
+      end
     end
 
     -- add the message components

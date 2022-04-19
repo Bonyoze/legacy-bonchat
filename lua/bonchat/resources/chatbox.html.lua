@@ -117,11 +117,11 @@ return [[<html>
         display: table;
         margin: 0 auto;
       }
-      .message.no-selection {
+      .message.unselect-content > .message-content, .message.unselect-attachments > .message-attachments {
         -webkit-user-select: none;
         user-select: none;
       }
-      .message.no-pointer-events {
+      .message.untouch-content > .message-content, .message.untouch-attachments > .message-attachments {
         pointer-events: none;
       }
 
@@ -584,7 +584,7 @@ return [[<html>
     var chatboxIsOpen = false,
     msgMaxLen = 2048; // temporary
 
-    function buildTimestamp(s) { // H:MM AM/PM
+    function getTimestampText(s) { // H:MM AM/PM
       function pad(n) {
         return ("00" + n).slice(-2);
       }
@@ -725,7 +725,7 @@ return [[<html>
         });
       };
       this.send = function() {
-        // add some data
+        // set send time
         this.MSG_CONTAINER.data({
           sendTime: Date.now()
         });
@@ -734,7 +734,7 @@ return [[<html>
         if (this.MSG_CONTAINER.hasClass("show-timestamp"))
           this.MSG_CONTENT.prepend(
             $("<span class='timestamp'>")
-              .text(buildTimestamp(this.MSG_CONTAINER.data("sendTime")))
+              .text(getTimestampText(this.MSG_CONTAINER.data("sendTime")))
           );
 
         var scrolled = isFullyScrolled();
