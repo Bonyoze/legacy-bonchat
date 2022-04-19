@@ -16,18 +16,10 @@ end
 function BonChat.ReloadChat()
   if IsValid(BonChat.frame) then BonChat.frame:Remove() end
   BonChat.frame = vgui.Create("BonChat_Frame")
-  BonChat.AppendMessage(
-    {
-      centerContent = true,
-      centerAttachments = true
-    },
-    color_white,
-    "$0000ff$:i:star: ***BonChat has successfully loaded!*** :i:star: https://media.discordapp.net/attachments/292328649711943680/883812645105446922/25.gif"
-  )
 end
 
 function BonChat.AppendMessage(options, ...)
-  BonChat.frame:AppendMessage(options, ...)
+  BonChat.frame:AppendMessage(options or {}, ...)
 end
 
 function BonChat.ClearChat()
@@ -67,7 +59,7 @@ end
 
 BonChat.oldChatAddText = BonChat.oldChatAddText or chat.AddText
 function chat.AddText(...)
-  BonChat.frame:AppendMessage(nil, ...)
+  BonChat:AppendMessage({}, ...)
   BonChat.oldChatAddText(...)
 end
 
@@ -131,10 +123,21 @@ end)
 
 -- initializing
 
-hook.Add("Initialize", "BonChat_Initialize", function()
+local function initChatbox()
   BonChat.ReloadChat()
-end)
+  BonChat.AppendMessage(
+    {
+      centerContent = true,
+      noSelection = true,
+      noPointerEvents = true
+    },
+    color_white,
+    ":icon:accept: **BonChat has successfully loaded**"
+  )
+end
+
+hook.Add("Initialize", "BonChat_Initialize", initChatbox)
 
 if GAMEMODE then
-  BonChat.ReloadChat()
+  initChatbox()
 end

@@ -1,3 +1,10 @@
+surface.CreateFont("BonChatSettings", {
+	font = "Arial",
+	extended = false,
+	size = 18,
+  weight = 600
+})
+
 local PANEL = {
   Init = function(self)
     self:SetTitle("Chat Settings")
@@ -11,6 +18,32 @@ local PANEL = {
       surface.SetDrawColor(50, 50, 50)
       surface.DrawRect(2, 25, w - 4, h - 27)
     end
+
+    self.panel = self:Add("DScrollPanel")
+    self.panel:Dock(FILL)
+    self.panel:GetVBar():SetWide(0)
+
+    self:AddButton("Reload Chatbox", function()
+      BonChat.ReloadChat()
+      BonChat.OpenChat(1)
+      BonChat.AppendMessage(
+        {
+          centerContent = true,
+          noSelection = true,
+          noPointerEvents = true
+        },
+        color_white,
+        ":icon:cog: **Chatbox was reloaded**"
+      )
+    end)
+    self:AddButton("Clear Chat", BonChat.ClearChat)
+  end,
+  AddButton = function(self, text, callback)
+    local btn = self.panel:Add("DButton")
+    btn:SetText(text)
+    btn:Dock(TOP)
+    btn:DockMargin(20, 0, 20, 0)
+    btn.DoClick = callback
   end
 }
 

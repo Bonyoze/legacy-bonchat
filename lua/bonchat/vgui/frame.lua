@@ -4,7 +4,10 @@ include("bonchat/vgui/popout.lua")
 
 local msgOptions = {
   centerContent = "center-content",
-  centerAttachments = "center-attachments"
+  centerAttachments = "center-attachments",
+  noSelection = "no-selection",
+  noPointerEvents = "no-pointer-events",
+  showTimestamp = "show-timestamp"
 }
 
 local PANEL = {
@@ -37,7 +40,7 @@ local PANEL = {
     self.btnSettings.DoClick = function() -- toggle settings panel visibility
       if self.settings:IsVisible() then return self.settings:Hide() end
       local x, y = self:LocalToScreen()
-      self.settings:SetSize(ScrW() * 0.15, self:GetTall() * 0.5)
+      self.settings:SetSize(ScrW() * 0.15, self:GetTall())
       self.settings:SetPos(x + self:GetWide() + 4, y)
       self.settings:Show()
       self.settings:MakePopup()
@@ -51,7 +54,7 @@ local PANEL = {
 
     -- fix scale of children on resize
     self.OnSizeChanged = function(self, w, h)
-      self.settings:SetSize(ScrW() * 0.15, self:GetTall() * 0.5)
+      self.settings:SetSize(ScrW() * 0.15, self:GetTall())
     end
 
     local lastEnter = false
@@ -85,8 +88,14 @@ local PANEL = {
       lastEscape = escape
     end)
 
-    hook.Add("ChatText", self, function(_, _, _, text, type)
-      self:AppendMessage(nil, text)
+    hook.Add("ChatText", self, function(self, _, _, text, type)
+      self:AppendMessage({}, text)
+    end)
+
+    hook.Add("OnPlayerChat", self, function(self, ply, text, team)
+      self:AppendMessage({ showTimestamp = true }, IsValid(ply) and ply or "Console", color_white, ": " .. text)
+      BonChat.oldChatAddText(IsValid(ply) and ply or "Console", color_white, ": " .. text)
+      return true
     end)
 
     self:CloseFrame()
@@ -110,12 +119,12 @@ local PANEL = {
     self:ReadyJS()
   end,
   AppendMessage = function(self, options, ...)
-    options = options or {}
     self:ReadyJS()
 
     -- create a new message object
     self:AddJS("var msg = new Message()")
 
+    -- apply options
     for k, v in pairs(options) do
       local opt = msgOptions[k]
       if opt then self:AddJS("msg.MSG_CONTAINER.addClass('%s')", opt) end

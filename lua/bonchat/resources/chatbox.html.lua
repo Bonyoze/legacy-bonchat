@@ -16,6 +16,7 @@ return [[<html>
         font-size: 1rem;
         line-height: 1.375rem;
         text-shadow: 1px 1px 1px #000, 1px 1px 2px #000;
+        opacity: 0.9999; /* i have no idea why, but not fully opaque makes the font render sharper */
       }
 
       /* hiding when chatbox is closed */
@@ -68,6 +69,18 @@ return [[<html>
         white-space: nowrap;
       }
 
+      .timestamp {
+        font-size: 0.8rem;
+        color: #fff;
+        background-color: rgba(0,0,0,0.5);
+        border-radius: 4px;
+        margin: -0.25rem 0.5rem -0.25rem 0;
+        padding: 0.25rem;
+        -webkit-user-select: none;
+        user-select: none;
+        pointer-events: none;
+      }
+
       .message {
         padding: 4px;
         white-space: pre-wrap;
@@ -93,7 +106,7 @@ return [[<html>
         background: rgba(0,0,0,0.25);
       }
 
-      /* centered styling */
+      /* message option styling */
 
       .message.center-content > .message-content {
         display: table;
@@ -103,6 +116,13 @@ return [[<html>
       .message.center-attachments > .message-attachments {
         display: table;
         margin: 0 auto;
+      }
+      .message.no-selection {
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      .message.no-pointer-events {
+        pointer-events: none;
       }
 
       /* markdown styling */
@@ -561,7 +581,25 @@ return [[<html>
     const chatbox = $("#chatbox"),
     entry = $("#entry");
 
-    var msgMaxLen = 2048; // temporary
+    var chatboxIsOpen = false,
+    msgMaxLen = 2048; // temporary
+
+    function buildTimestamp(s) { // H:MM AM/PM
+      function pad(n) {
+        return ("00" + n).slice(-2);
+      }
+
+      s = s - new Date().getTimezoneOffset() * 60000;
+
+      var ms = s % 1000;
+      s = (s - ms) / 1000;
+      var secs = s % 60;
+      s = (s - secs) / 60;
+      var mins = s % 60;
+      var hrs = (s - mins) / 60;
+
+      return ((hrs - 1) % 12 + 1) + ":" + pad(mins) + " " + (hrs % 24 >= 12 ? "PM" : "AM");
+    }
 
     function isFullyScrolled() {
       var e = chatbox.get(0);
@@ -573,10 +611,43 @@ return [[<html>
       e.scrollTop = e.scrollHeight;
     }
 
+    jQuery.fn.resetFadeOut = function() {
+      this.css({
+        "-webkit-transition": "initial",
+        "transition": "initial",
+        "opacity": "initial"
+      });
+    }
+
+    jQuery.fn.startFadeOut = function(duration, delay) {
+      var now = Date.now();
+      this.each(function() {
+        var e = $(this),
+          timeSinceSent = now - e.data("sendTime"),
+          opac = Math.max((duration - Math.max(timeSinceSent - delay, 0)) / duration, 0);
+        if (opac == 0)
+          e.css("opacity", "0");
+        else {
+          var transition = "opacity "
+            + Math.max(duration - Math.max(timeSinceSent - delay, 0), 0) // new duration
+            + "ms linear "
+            + Math.max(delay - timeSinceSent, 0) // new delay
+            + "ms";
+          e.css({
+            "opacity": opac, // starting opacity
+            "-webkit-transition": transition,
+            "transition": transition,
+            "opacity": "0"
+          });
+        }
+      })
+    }
+
     function Message() {
       this.MAX_ATTACHMENTS = 5;
 
       this.MSG_CONTAINER = $("<div class='message'>");
+
       this.MSG_CONTENT = $("<div class='message-content'>").appendTo(this.MSG_CONTAINER);
       this.MSG_ATTACHMENTS = $("<div class='message-attachments'>").appendTo(this.MSG_CONTAINER);
       
@@ -587,10 +658,9 @@ return [[<html>
       };
       this.appendText = function(str) {
         var markdownHTML = outputHTML(nestedParse(str));
-        this.MSG_CONTENT.append(
-          $("<span>")
-            .html(markdownHTML)
-            .css("color", this.textColor)
+        this.MSG_CONTENT.append($("<span>")
+          .html(markdownHTML)
+          .css("color", this.textColor)
         );
       };
       this._loadAttachments = function() {
@@ -658,7 +728,14 @@ return [[<html>
         // add some data
         this.MSG_CONTAINER.data({
           sendTime: Date.now()
-        })
+        });
+
+        // show timestamp
+        if (this.MSG_CONTAINER.hasClass("show-timestamp"))
+          this.MSG_CONTENT.prepend(
+            $("<span class='timestamp'>")
+              .text(buildTimestamp(this.MSG_CONTAINER.data("sendTime")))
+          );
 
         var scrolled = isFullyScrolled();
         this.MSG_CONTAINER.appendTo(chatbox);
@@ -669,6 +746,10 @@ return [[<html>
 
         // load emojis
         this._loadEmojis();
+
+        // start fade out animation
+        if (!chatboxIsOpen)
+          this.MSG_CONTAINER.startFadeOut(1000, 5000);
       }
     };
 
@@ -750,15 +831,19 @@ return [[<html>
             glua.openURL(url);
         }
       });
-
+    
     function CHATBOX_PANEL_OPEN() {
+      chatboxIsOpen = true;
       $("html").removeClass("chatbox-closed");
       entry.focus(); // focus so the user can type in it
+      $(".message").resetFadeOut();
     }
     function CHATBOX_PANEL_CLOSE() {
+      chatboxIsOpen = false;
       $("html").addClass("chatbox-closed");
       entry.text(''); // clear the entry
       scrollToBottom(); // reset scroll
+      $(".message").startFadeOut(1000, 5000);
     }
   </script>
 </html>]]
