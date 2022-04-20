@@ -1,19 +1,6 @@
 include("bonchat/vgui/settings.lua")
 include("bonchat/vgui/chatbox.lua")
-include("bonchat/vgui/popout.lua")
-
---[[
-  AppendMessage Options
-
-  contentCentered       - true (horizontally centers the message text)
-  attachmentsCentered   - true (horizontally centers the message attachments)
-  contentUnselectable     - true (prevents text highlighting)
-  attachmentsUnselectable - true (prevents attachment highlighting)
-  contentUntouchable      - true (prevents mouse clicking from triggering on text)
-  attachmentsUntouchable  - true (prevents mouse clicks from triggering on attachments)
-  timestampShown       - true (shows a timestamp of when the message was sent)
-  sender              - player entity (used for identifying who sent the message)
-]]
+include("bonchat/vgui/browser.lua")
 
 local optionClasses = {
   contentCentered = "center-content",
@@ -64,8 +51,8 @@ local PANEL = {
     -- DHTML panel used for the actual chatbox
     self.chatbox = self:Add("BonChat_Chatbox")
 
-    -- seperate free-moving frame for showing websites/images
-    self.popout = vgui.Create("BonChat_Popout")
+    -- DFrame panel used for opening links in-game
+    self.browser = vgui.Create("BonChat_Browser")
 
     -- fix scale of children on resize
     self.OnSizeChanged = function(self, w, h)
@@ -107,10 +94,10 @@ local PANEL = {
       self:AppendMessage({}, text)
     end)
 
-    hook.Add("OnPlayerChat", self, function(self, ply, text, team)
-      self:AppendMessage({ sender = ply, timestampShown = true }, IsValid(ply) and ply or "**Console**", color_white, ": " .. text)
-      BonChat.oldChatAddText(IsValid(ply) and ply or "Console", color_white, ": " .. text)
-      return true
+    local clrTeam = Color(24, 162, 35)
+
+    hook.Add("OnPlayerChat", self, function()
+      self:SetMessageOptions({ timestampShown = true }) // set options for next appended message
     end)
 
     self:CloseFrame()
@@ -133,6 +120,9 @@ local PANEL = {
     self:CallJS(tempJS)
     self:ReadyJS()
   end,
+  SetMessageOptions = function(self, options)
+    self.msgOptions = istable(options) and options
+  end,
   AppendMessage = function(self, options, ...)
     self:ReadyJS()
 
@@ -140,6 +130,11 @@ local PANEL = {
     self:AddJS("var msg = new Message()")
 
     -- apply options
+
+    if self.msgOptions then
+      table.Merge(options, self.msgOptions)
+      self.msgOptions = nil
+    end
 
     for k, v in pairs(options) do
       if v ~= true then continue end
@@ -158,7 +153,7 @@ local PANEL = {
     -- add the message components
     for _, v in ipairs({...}) do
       if isstring(v) then
-        self:AddJS("msg.appendText('%s')", string.JavascriptSafe(v))
+        self:AddJS("msg.appendMarkdownText('%s')", string.JavascriptSafe(v))
       elseif istable(v) then
         -- set the current text color
         self:AddJS("msg.setTextColor('rgb(%d,%d,%d)')",
@@ -170,13 +165,12 @@ local PANEL = {
         if v == NULL then
           self:AddJS("msg.appendText('NULL')")
         elseif v:IsPlayer() then
-          -- chat.AddText handles the coloring for player entities by ignoring the current text color and using team color
-          -- so here we set the text color to the team color and then revert it back to not affect anything after
           local clr = hook.Run("GetTeamColor", v)
-          self:AddJS("var clr = msg.textColor")
-          self:AddJS("msg.setTextColor('rgb(%d,%d,%d)')", clr.r, clr.g, clr.b)
-          self:AddJS("msg.appendText('%s')", "**" .. string.JavascriptSafe(v:Nick()) .. "**")
-          self:AddJS("msg.setTextColor(clr)")
+          self:AddJS("msg.appendPlayerName('%s', '%s', '%s')",
+            string.JavascriptSafe(v:Nick()),
+            "rgb(" .. clr.r .. "," .. clr.g .. "," .. clr.b .. ")",
+            string.JavascriptSafe(v:SteamID())
+          )
         else
           self:AddJS("msg.appendText('%s')", string.JavascriptSafe(v:GetClass()))
         end
@@ -185,10 +179,9 @@ local PANEL = {
 
     -- send the message element to the chatbox
     self:AddJS("msg.send()")
-
     self:RunJS()
   end,
-  OpenFrame = function(self, mode)
+  OpenFrame = function(self)
     -- move the frame to the front and enable input
     self:MakePopup()
 
@@ -217,13 +210,13 @@ local PANEL = {
     -- hide parts
     self.settings:Hide()
     self.btnSettings:Hide()
-    self.popout:Hide()
+    self.browser:Hide()
 
     self:CallJS("CHATBOX_PANEL_CLOSE()")
   end,
   OnRemove = function(self)
     -- cleanup
-    self.popout:Remove()
+    self.browser:Remove()
   end
 }
 

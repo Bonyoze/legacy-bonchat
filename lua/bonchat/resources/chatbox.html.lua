@@ -16,7 +16,7 @@ return [[<html>
         font-size: 1rem;
         line-height: 1.375rem;
         text-shadow: 1px 1px 1px #000, 1px 1px 2px #000;
-        opacity: 0.9999; /* i have no idea why, but not fully opaque makes the font render sharper */
+        opacity: 0.9999; /* i have no idea why, but not fully opaque makes the font render sharper in Awesomium */
       }
 
       /* hiding when chatbox is closed */
@@ -64,7 +64,6 @@ return [[<html>
         outline: none;
         background: rgba(0,0,0,0.5);
         border-radius: 4px;
-
         color: #fff;
         white-space: nowrap;
       }
@@ -74,19 +73,23 @@ return [[<html>
         color: #fff;
         background-color: rgba(0,0,0,0.5);
         border-radius: 4px;
-        margin: -0.25rem 0.5rem -0.25rem 0;
-        padding: 0.25rem;
+        margin: -0.24rem 4px -0.24rem 0;
+        padding: 0.24rem;
         -webkit-user-select: none;
         user-select: none;
         pointer-events: none;
+      }
+
+      .player-name {
+        font-weight: bold;
+        cursor: pointer;
       }
 
       .message {
         padding: 4px;
         white-space: pre-wrap;
         word-wrap: break-word;
-        /*max-height: 250px;*/
-        overflow-x: hidden;
+        overflow: hidden;
       }
       .message:first-child {
         border-top-left-radius: 4px;
@@ -104,6 +107,10 @@ return [[<html>
       }
       .message:hover {
         background: rgba(0,0,0,0.25);
+      }
+
+      .message-content *, .message-attachments * {
+        vertical-align: top;
       }
 
       /* message option styling */
@@ -148,7 +155,6 @@ return [[<html>
       }
 
       div.image-attachment img {
-        vertical-align: top;
         display: inline-block;
         max-width: 100%;
         max-height: 200px;
@@ -156,7 +162,6 @@ return [[<html>
       }
 
       img.emoji {
-        vertical-align: top;
         display: inline-block;
         width: 1.375rem;
         height: 1.375rem;
@@ -165,7 +170,39 @@ return [[<html>
         width: 3em;
         height: 3em;
       }
-      
+
+      @keyframes rainbow-animate {
+        0% {
+          /*filter: hue-rotate(0deg);*/
+          background-position-x: 0%;
+        }
+        100% {
+          /*filter: hue-rotate(360deg);*/
+          background-position-x: 40rem;
+        }
+      }
+      .rainbow-text {
+        background: linear-gradient(
+          to right,
+          rgba(255, 0, 0, 1) 0%,
+          rgba(255, 154, 0, 1) 10%,
+          rgba(208, 222, 33, 1) 20%,
+          rgba(79, 220, 74, 1) 30%,
+          rgba(63, 218, 216, 1) 40%,
+          rgba(47, 201, 226, 1) 50%,
+          rgba(28, 127, 238, 1) 60%,
+          rgba(95, 21, 242, 1) 70%,
+          rgba(186, 12, 248, 1) 80%,
+          rgba(251, 7, 217, 1) 90%,
+          rgba(255, 0, 0, 1) 100%
+        );
+        -webkit-background-clip: text;
+        background-clip: text;
+        background-size: 40rem, 100%;
+        color: transparent;
+        animation: rainbow-animate 3s linear infinite;
+        text-shadow: none;
+      }
     </style>
   </head>
   <body>
@@ -362,18 +399,15 @@ return [[<html>
             case "steam":
             case "s":
               return htmlTag("span", text, {
-                  class: "pre-emoji",
-                  src: buildSteamEmojiURL(node.name)
-                });
+                class: "pre-emoji",
+                src: buildSteamEmojiURL(node.name)
+              });
             case "icon":
             case "i":
               return htmlTag("span", text, {
                 class: "pre-emoji",
                 src: buildSilkiconURL(node.name)
-              })
-            case "twitch":
-            case "t":
-              return text; // WIP
+              });
             default:
               return text;
           }
@@ -472,7 +506,9 @@ return [[<html>
           };
         },
         html: function(node) {
-          if (/^\d{1,3},\d{1,3},\d{1,3}/.test(node.content))
+          if (/^rainbow$/i.test(node.content))
+            return htmlTag("span", null, { class: "rainbow-text" }, false);
+          else if (/^\d{1,3},\d{1,3},\d{1,3}$/.test(node.content))
             return htmlTag("span", null, { style: "color:rgb(" + node.content + ")" }, false);
           else if (/^([0-9a-f]{6}|[0-9a-f]{3})$/i.test(node.content))
             return htmlTag("span", null, { style: "color:#" + node.content }, false);
@@ -657,11 +693,28 @@ return [[<html>
         if (str) this.textColor = str;
       };
       this.appendText = function(str) {
-        var markdownHTML = outputHTML(nestedParse(str));
-        this.MSG_CONTENT.append($("<span>")
-          .html(markdownHTML)
-          .css("color", this.textColor)
+        this.MSG_CONTENT.append(
+          $("<span>")
+            .text(str)
+            .css("color", this.textColor)
         );
+      };
+      this.appendMarkdownText = function(str) {
+        var markdownHTML = outputHTML(nestedParse(str));
+        this.MSG_CONTENT.append(
+          $("<span>")
+            .html(markdownHTML)
+            .css("color", this.textColor)
+        );
+      };
+      this.appendPlayerName = function(name, color, steamID) {
+        var elem = $("<span class='player-name'>")
+          .text(name)
+          .css("color", color);
+        
+        if (steamID && steamID != "NULL") elem.on("click", function() { glua.showProfile(steamID) });
+        
+        this.MSG_CONTENT.append(elem);
       };
       this._loadAttachments = function() {
         var maxAttachments = this.MAX_ATTACHMENTS,
@@ -689,6 +742,7 @@ return [[<html>
             .on("load", function() { // image loaded
               img.off();
 
+              link.remove();
               attachments.append(
                 // setup attachment using the loaded image
                 attachmentContainer
@@ -697,7 +751,7 @@ return [[<html>
                     .append(img.attr("alt", url))
                   )
               );
-              link.remove();
+              
               if (scrolled) scrollToBottom();
             })
             .on("error", function() { // failed to load image
@@ -749,7 +803,7 @@ return [[<html>
 
         // start fade out animation
         if (!chatboxIsOpen)
-          this.MSG_CONTAINER.startFadeOut(1000, 5000);
+          this.MSG_CONTAINER.startFadeOut(3000, 10000);
       }
     };
 
@@ -821,14 +875,14 @@ return [[<html>
         if (url) {
           event.preventDefault(); // prevent redirect
           if (elem.is("img"))
-            glua.showImage(url,
+            glua.openImage(url,
               elem.prop("naturalWidth"),
               elem.prop("naturalHeight"),
               elem.prop("width"),
               elem.prop("height")
             );
           else
-            glua.openURL(url);
+            glua.openPage(url);
         }
       });
     
@@ -843,7 +897,7 @@ return [[<html>
       $("html").addClass("chatbox-closed");
       entry.text(''); // clear the entry
       scrollToBottom(); // reset scroll
-      $(".message").startFadeOut(1000, 5000);
+      $(".message").startFadeOut(3000, 10000);
     }
   </script>
 </html>]]

@@ -24,18 +24,11 @@ local PANEL = {
     self.panel:GetVBar():SetWide(0)
 
     self:AddButton("Reload Chatbox", function()
-      BonChat.ReloadChat()
-      BonChat.OpenChat(1)
-      BonChat.AppendMessage(
-        {
-          contentCentered = true,
-          contentUnselectable = true
-        },
-        color_white,
-        ":icon:cog: **Chatbox was reloaded**"
-      )
+      RunConsoleCommand("bonchat_reload")
     end)
-    self:AddButton("Clear Chat", BonChat.ClearChat)
+    self:AddButton("Clear Chat", function()
+      RunConsoleCommand("bonchat_clear")
+    end)
   end,
   AddButton = function(self, text, callback)
     local btn = self.panel:Add("DButton")

@@ -31,12 +31,13 @@ function BonChat.Say(text)
 
   net.Start("BonChat_say")
     net.WriteString(string.Left(text, BonChat.GetMsgMaxLen()))
-    net.WriteBool(false)
+    net.WriteBool(BonChat.chatMode ~= 1)
   net.SendToServer()
 end
 
 function BonChat.OpenURL(url)
   if not url or #url == 0 then return end
+
   if not (string.StartWith(url, "https://") or string.StartWith(url, "http://")) then
     return BonChat.Log("Cannot open a URL unless it's using the protocol 'https' or 'http'!")
   end
@@ -47,8 +48,14 @@ function BonChat.OpenURL(url)
   gui.OpenURL(url)
 end
 
-function BonChat.ShowImage(url, w, h, minW, minH)
-  BonChat.frame.popout:ShowImage(url, w, h, minW, minH)
+function BonChat.OpenPage(url)
+  if BRANCH == "unknown" then return BonChat.OpenURL(url) end
+  BonChat.frame.browser:OpenPage(url)
+end
+
+function BonChat.OpenImage(url, w, h, minW, minH)
+  if BRANCH == "unknown" then return BonChat.OpenURL(url) end
+  BonChat.frame.browser:OpenImage(url, w, h, minW, minH)
 end
 
 function BonChat.GetResource(name)
@@ -65,13 +72,16 @@ end
 
 BonChat.oldChatOpen = BonChat.oldChatOpen or chat.Open
 function chat.Open(mode, ...)
-  BonChat.frame:OpenFrame(mode)
+  if BonChat.enabled then
+    BonChat.chatMode = mode
+    BonChat.frame:OpenFrame()
+  end
   BonChat.oldChatOpen(mode, ...)
 end
 
 BonChat.oldChatClose = BonChat.oldChatClose or chat.Close
 function chat.Close(...)
-  BonChat.frame:CloseFrame()
+  if BonChat.enabled then BonChat.frame:CloseFrame() end
   BonChat.oldChatClose(...)
 end
 
@@ -92,13 +102,13 @@ panelMeta.DrawBlur = function(self, layers, density, alpha)
   end
 end
 
-hook.Add("HUDShouldDraw", "BonChat_HideDefaultChat", function(name)
+local function hideDefaultChat(name)
   if name == "CHudChat" then
     return false
   end
-end)
+end
 
-hook.Add("PlayerBindPress", "BonChat_OpenChat", function(_, bind, pressed)
+local function openChat(_, bind, pressed)
   if not pressed then return end
   
   if bind == "messagemode" then
@@ -106,7 +116,7 @@ hook.Add("PlayerBindPress", "BonChat_OpenChat", function(_, bind, pressed)
   elseif bind == "messagemode2" then
     BonChat.OpenChat(2)
   end
-end)
+end
 
 -- receive player messages sent using the chatbox
 net.Receive("BonChat_say", function()
@@ -123,7 +133,7 @@ end)
 
 -- initializing
 
-local function initChatbox()
+function BonChat.InitChatbox()
   BonChat.ReloadChat()
   BonChat.AppendMessage(
     {
@@ -136,10 +146,27 @@ local function initChatbox()
     color_white,
     ":icon:accept: **BonChat has successfully loaded** https://media.discordapp.net/attachments/292328649711943680/883812645105446922/25.gif"
   )
+  if BonChat.enabled then
+    BonChat.EnableChatbox()
+  else
+    BonChat.DisableChatbox()
+  end
 end
 
-hook.Add("Initialize", "BonChat_Initialize", initChatbox)
+function BonChat.EnableChatbox()
+  hook.Add("HUDShouldDraw", "BonChat_HideDefaultChat", hideDefaultChat)
+  hook.Add("PlayerBindPress", "BonChat_OpenChat", openChat)
+  BonChat.frame.chatbox:Show()
+end
+
+function BonChat.DisableChatbox()
+  hook.Remove("HUDShouldDraw", "BonChat_HideDefaultChat")
+  hook.Remove("PlayerBindPress", "BonChat_OpenChat")
+  BonChat.frame.chatbox:Hide()
+end
+
+hook.Add("Initialize", "BonChat_Initialize", BonChat.InitChatbox)
 
 if GAMEMODE then
-  initChatbox()
+  BonChat.InitChatbox()
 end
