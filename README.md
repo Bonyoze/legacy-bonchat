@@ -1,7 +1,7 @@
 # gmod-bonchat
 #### A chatbox for Garry's Mod with markdown support, emoji support, ability to show images/videos, and some other stuff (WIP)
 
-![bonchat](https://user-images.githubusercontent.com/59924045/162588003-f9e06f1d-2a97-4b13-b46a-e37cfe9a57bb.png)
+![bonchat](https://user-images.githubusercontent.com/59924045/164146558-dd6eb913-d43e-4692-b10e-e16ee80a10ba.png)
 
 *Should work on any branch, but intended for usage on `x86-64`*
 
@@ -12,7 +12,7 @@
 - ➖ derma panels
   - ✅ frame
   - ✅ chatbox
-  - ➖ browser pop out
+  - ✅ browser
   - ➖ settings
     - ❌ URL whitelist editing
     - ❌ max message render height
@@ -33,8 +33,6 @@
     - ➖ audio
     - ❌ links
   - ❌ chatbox input markdown
-- ➖ server
-  - ➖ convars for message char limit and send cooldown
 - ➖ api stuff
 
 ---
