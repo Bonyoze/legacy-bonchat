@@ -37,7 +37,6 @@ local PANEL = {
 
     self.dhtml.ConsoleMessage = function() end
     self.dhtml.OnFocusChanged = function(self, gained)
-      print(gained)
       if not gained then
         self.OnDocumentReady = function() end
         self:SetHTML("")
