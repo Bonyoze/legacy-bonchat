@@ -1,48 +1,86 @@
--- this script customizes current game messages (connecting, joining, leaving, name change, cvar change, player chat)
+-- this script adds custom game messages to BonChat
+-- (connecting, joining, leaving, name change, cvar change, achievement get, player chat)
 
-local color_connecting = Color(150, 255, 150)
+if SERVER then
+  util.AddNetworkString("BonChat_ConnectDisconnect")
+  util.AddNetworkString("BonChat_JoinLeave")
 
--- player connecting messages
+  gameevent.Listen("player_connect")
+  hook.Add("player_connect", "BonChat_PlayerConnect", function(data)
+    net.Start("BonChat_ConnectDisconnect")
+      net.WriteBool(true)
+      net.WriteString(data.name)
+    net.Broadcast()
+  end)
 
-net.Receive("BonChat_PlayerConnect", function()
+  hook.Add("PlayerInitialSpawn", "BonChat_PlayerJoin", function(ply)
+    -- wait so the player team is set
+    timer.Simple(0, function()
+      if not IsValid(ply) then return end
+      local clr = team.GetColor(ply:Team())
+      net.Start("BonChat_JoinLeave")
+        net.WriteBool(true)
+        net.WriteBool(ply:IsBot())
+        net.WriteString(ply:Nick())
+        net.WriteUInt(clr.r, 8)
+        net.WriteUInt(clr.g, 8)
+        net.WriteUInt(clr.b, 8)
+        net.WriteString(ply:SteamID())
+      net.Broadcast()
+    end)
+  end)
+  
+  gameevent.Listen("player_disconnect")
+  hook.Add("player_disconnect", "BonChat_PlayerLeaveDisconnect", function(data)
+    local ply = Player(data.userid)
+    if IsValid(ply) then
+      local clr = team.GetColor(ply:Team())
+      net.Start("BonChat_JoinLeave")
+        net.WriteBool(false)
+        net.WriteBool(ply:IsBot())
+        net.WriteString(ply:Nick())
+        net.WriteUInt(clr.r, 8)
+        net.WriteUInt(clr.g, 8)
+        net.WriteUInt(clr.b, 8)
+        net.WriteString(ply:SteamID())
+        net.WriteString(data.reason)
+      net.Broadcast()
+    else
+      net.Start("BonChat_ConnectDisconnect")
+        net.WriteBool(false)
+        net.WriteString(data.name)
+      net.Broadcast()
+    end
+  end)
+
+  return
+end
+
+local color_connecting = Color(162, 255, 162)
+
+-- player connecting/disconnecting messages
+net.Receive("BonChat_ConnectDisconnect", function()
+  local connecting = net.ReadBool()
   local name = net.ReadString()
 
   local msg = BonChat.Message()
   msg:ShowTimestamp()
   msg:AppendColor(color_connecting)
-  msg:AppendMarkdown(":icon:status_away: **" .. name .. " is connecting to the server...**")
-  BonChat.SendMessage(msg)
-
-  -- keep functionality in the old chatbox
-  BonChat.SendOldChatMessage(color_connecting, name .. " is connecting to the server...")
-end)
-
--- player join messages
-net.Receive("BonChat_PlayerJoin", function()
-  local isBot = net.ReadBool()
-  local name = net.ReadString()
-  local color = Color(net.ReadUInt(8), net.ReadUInt(8), net.ReadUInt(8))
-  local steamID = net.ReadString()
-
-  local msg = BonChat.Message()
-  msg:ShowTimestamp()
-  msg:AppendMarkdown(":icon:status_online: ")
-  msg:AppendPlayer(name, color, not isBot and steamID)
-  msg:AppendColor(color_white)
-  msg:AppendText(" has joined the server")
-  BonChat.SendMessage(msg)
-
-  -- keep functionality in the old chatbox
-  BonChat.SendOldChatMessage(
-    color,
-    name,
-    color_white,
-    " has joined the server"
+  msg:AppendMarkdown(
+    ":icon:status_"
+    .. (connecting and "online" or "offline")
+    .. ": **Player "
+    .. name
+    .. " "
+    .. (connecting and "is" or "stopped")
+    .. " connecting**"
   )
+  BonChat.SendMessage(msg)
 end)
 
--- player leave messages
-net.Receive("BonChat_PlayerLeave", function()
+-- player join/leave messages
+net.Receive("BonChat_JoinLeave", function()
+  local joined = net.ReadBool()
   local isBot = net.ReadBool()
   local name = net.ReadString()
   local color = Color(net.ReadUInt(8), net.ReadUInt(8), net.ReadUInt(8))
@@ -51,41 +89,37 @@ net.Receive("BonChat_PlayerLeave", function()
 
   local msg = BonChat.Message()
   msg:ShowTimestamp()
-  msg:AppendMarkdown(":icon:status_offline: ")
+  msg:AppendMarkdown(
+    ":icon:status_"
+    .. (joined and "online" or "offline")
+    .. ": "
+  )
   msg:AppendPlayer(name, color, not isBot and steamID)
   msg:AppendColor(color_white)
-  msg:AppendText(" has left the server ")
-  msg:AppendMarkdown("**(" .. reason .. ")**")
+  msg:AppendText(" has " .. (joined and "joined" or "left") .. " the server")
+  if not joined then
+    msg:AppendMarkdown(" **(" .. reason .. ")**")
+  end
   BonChat.SendMessage(msg)
-
-  -- keep functionality in the old chatbox
-  BonChat.SendOldChatMessage(
-    color,
-    name,
-    color_white,
-    " has left the server (" .. reason .. ")"
-  )
 end)
 
--- player changed name messages
+-- player name change messages
 gameevent.Listen("player_changename")
 hook.Add("player_changename", "BonChat_PlayerNameChange", function(data)
   local ply = Player(data.userid)
   if not ply:IsValid() then return end
 
   local clr = hook.Run("GetTeamColor", ply)
+  local steamID = ply:SteamID()
 
   local msg = BonChat.Message()
   msg:ShowTimestamp()
-  msg:AppendMarkdown(":icon:pencil: ")
-  msg:AppendPlayer(data.oldname, clr, ply:SteamID())
+  msg:AppendMarkdown(":icon:user_edit: ")
+  msg:AppendPlayer(data.oldname, clr, steamID)
   msg:AppendColor(color_white)
   msg:AppendText(" changed their name to ")
-  msg:AppendPlayer(data.newname, clr, ply:SteamID())
+  msg:AppendPlayer(data.newname, clr, steamID)
   BonChat.SendMessage(msg)
-
-  -- keep functionality in the old chatbox
-  BonChat.SendOldChatMessage(clr, data.oldname, color_white, " changed their name to ", clr, data.newname)
 end)
 
 -- add server and misc messages to the chatbox
@@ -100,8 +134,25 @@ hook.Add("ChatText", "BonChat_ServerMiscMessages", function(_, _, text, type)
     msg:AppendText(text)
     BonChat.SendMessage(msg)
   else
-    return true -- prevent the other default messages since we customized those
+    -- prevent the other messages since we customized them
+    BonChat.SuppressDefaultMsg()
   end
+end)
+
+local color_achieve = Color(255, 200, 0)
+
+hook.Add("OnAchievementAchieved", "BonChat_AchieveMessages", function(ply, achid)
+  local msg = BonChat.Message()
+  msg:ShowTimestamp()
+  msg:AppendMarkdown(":icon:award_star_gold_3: ")
+  msg:AppendEntity(ply)
+  msg:AppendColor(color_white)
+  msg:AppendText(" earned the achievement ")
+  msg:AppendColor(color_achieve)
+  msg:AppendMarkdown("**" .. achievements.GetName(achid) .. "**")
+  BonChat.SendMessage(msg)
+
+  BonChat.SuppressDefaultMsg()
 end)
 
 local color_dead = Color(255, 0, 0) -- *DEAD*
@@ -132,24 +183,5 @@ hook.Add("OnPlayerChat", "BonChat_PlayerMessages", function(ply, text, teamChat,
     BonChat.SendMessage(msg)
   end
 
-  -- keep functionality in the old chatbox
-  do
-    local msg = {}
-    if isDead then
-      table.Add(msg, { color_dead, "*DEAD* " })
-    end
-    if teamChat then
-      table.Add(msg, { color_team, "(TEAM) " })
-    end
-    if IsValid(ply) then
-      table.insert(msg, ply)
-    else
-      table.insert(msg, "Console")
-    end
-    table.Add(msg, { color_white, ": " .. text })
-    
-    BonChat.SendOldChatMessage(unpack(msg))
-  end
-  
-  return true
+  BonChat.SuppressDefaultMsg()
 end)

@@ -114,11 +114,23 @@ end
 
 -- override chat functions to use the new chatbox
 
+local suppressDefault = false
+
+function BonChat.SuppressDefaultMsg()
+  suppressDefault = true
+  timer.Simple(0, function() suppressDefault = false end)
+end
+
 BonChat.oldChatAddText = BonChat.oldChatAddText or chat.AddText
 function chat.AddText(...)
-  local msg = BonChat.Message()
-  msg:AppendArgs(...)
-  BonChat.SendMessage(msg)
+  print(suppressDefault)
+  if not suppressDefault then
+    local msg = BonChat.Message()
+    msg:AppendArgs(...)
+    BonChat.SendMessage(msg)
+  else
+    suppressDefault = false
+  end
   BonChat.oldChatAddText(...)
 end
 
@@ -135,10 +147,6 @@ BonChat.oldChatClose = BonChat.oldChatClose or chat.Close
 function chat.Close(...)
   if BonChat.enabled then BonChat.frame:CloseFrame() end
   BonChat.oldChatClose(...)
-end
-
-function BonChat.SendOldChatMessage(...)
-  BonChat.oldChatAddText(...)
 end
 
 -- custom panel functions
