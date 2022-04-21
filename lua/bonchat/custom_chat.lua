@@ -100,7 +100,7 @@ hook.Add("ChatText", "BonChat_ServerMiscMessages", function(_, _, text, type)
     msg:AppendText(text)
     BonChat.SendMessage(msg)
   else
-    return true
+    return true -- prevent the other default messages since we customized those
   end
 end)
 
