@@ -80,7 +80,7 @@ return [[<html>
         pointer-events: none;
       }
 
-      .player-name {
+      .player {
         font-weight: bold;
         cursor: pointer;
       }
@@ -169,39 +169,6 @@ return [[<html>
       .emoji.jumbo {
         width: 3em;
         height: 3em;
-      }
-
-      @keyframes rainbow-animate {
-        0% {
-          /*filter: hue-rotate(0deg);*/
-          background-position-x: 0%;
-        }
-        100% {
-          /*filter: hue-rotate(360deg);*/
-          background-position-x: 40rem;
-        }
-      }
-      .rainbow-text {
-        background: linear-gradient(
-          to right,
-          rgba(255, 0, 0, 1) 0%,
-          rgba(255, 154, 0, 1) 10%,
-          rgba(208, 222, 33, 1) 20%,
-          rgba(79, 220, 74, 1) 30%,
-          rgba(63, 218, 216, 1) 40%,
-          rgba(47, 201, 226, 1) 50%,
-          rgba(28, 127, 238, 1) 60%,
-          rgba(95, 21, 242, 1) 70%,
-          rgba(186, 12, 248, 1) 80%,
-          rgba(251, 7, 217, 1) 90%,
-          rgba(255, 0, 0, 1) 100%
-        );
-        -webkit-background-clip: text;
-        background-clip: text;
-        background-size: 40rem, 100%;
-        color: transparent;
-        animation: rainbow-animate 3s linear infinite;
-        text-shadow: none;
       }
     </style>
   </head>
@@ -506,9 +473,7 @@ return [[<html>
           };
         },
         html: function(node) {
-          if (/^rainbow$/i.test(node.content))
-            return htmlTag("span", null, { class: "rainbow-text" }, false);
-          else if (/^\d{1,3},\d{1,3},\d{1,3}$/.test(node.content))
+          if (/^\d{1,3},\d{1,3},\d{1,3}$/.test(node.content))
             return htmlTag("span", null, { style: "color:rgb(" + node.content + ")" }, false);
           else if (/^([0-9a-f]{6}|[0-9a-f]{3})$/i.test(node.content))
             return htmlTag("span", null, { style: "color:#" + node.content }, false);
@@ -699,7 +664,7 @@ return [[<html>
             .css("color", this.textColor)
         );
       };
-      this.appendMarkdownText = function(str) {
+      this.appendMarkdown = function(str) {
         var markdownHTML = outputHTML(nestedParse(str));
         this.MSG_CONTENT.append(
           $("<span>")
@@ -707,10 +672,10 @@ return [[<html>
             .css("color", this.textColor)
         );
       };
-      this.appendPlayerName = function(name, color, steamID) {
-        var elem = $("<span class='player-name'>")
+      this.appendPlayer = function(name, color, steamID) {
+        var elem = $("<span class='player'>")
           .text(name)
-          .css("color", color);
+          .css("color", color || this.textColor);
         
         if (steamID && steamID != "NULL") elem.on("click", function() { glua.showProfile(steamID) });
         

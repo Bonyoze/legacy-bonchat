@@ -38,35 +38,6 @@ end)
 
 BonChat.enabled = BonChat.GetEnabled()
 
-concommand.Add("bonchat_reload", function()
-  BonChat.ReloadChat()
-  if BonChat.enabled then
-    BonChat.EnableChatbox()
-  else
-    BonChat.DisableChatbox()
-  end
-  BonChat.AppendMessage(
-    {
-      contentCentered = true,
-      contentUnselectable = true
-    },
-    color_white,
-    ":icon:cog: **Chatbox was reloaded**"
-  )
-end)
-
-concommand.Add("bonchat_clear", function()
-  BonChat.ClearChat()
-  BonChat.AppendMessage(
-    {
-      contentCentered = true,
-      contentUnselectable = true
-    },
-    color_white,
-    ":icon:bin: **Chatbox was cleared**"
-  )
-end)
-
 if SERVER then
   include("bonchat/base_sv.lua")
   AddCSLuaFile("bonchat/base_cl.lua")

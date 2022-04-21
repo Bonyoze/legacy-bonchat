@@ -2,20 +2,33 @@ include("bonchat/vgui/settings.lua")
 include("bonchat/vgui/chatbox.lua")
 include("bonchat/vgui/browser.lua")
 
-local optionClasses = {
-  contentCentered = "center-content",
-  attachmentsCentered = "center-attachments",
-  contentUnselectable = "unselect-content",
-  attachmentsUnselectable = "unselect-attachments",
-  contentUntouchable = "untouch-content",
-  attachmentsUntouchable = "untouch-attachments",
-  timestampShown = "show-timestamp"
+local function jsAddClass(val)
+  return string.format("msg.MSG_CONTAINER.addClass('%s')", string.JavascriptSafe(val))
+end
+
+local function jsSetData(name, val)
+  return string.format("msg.MSG_CONTAINER.data('%s', '%s')",
+    string.JavascriptSafe(name),
+    string.JavascriptSafe(val)
+  )
+end
+
+local optionRules = {
+  CENTER_CONTENT    = jsAddClass("center-content"),
+  CENTER_ATTACH     = jsAddClass("center-attachments"),
+  NO_SELECT_CONTENT = jsAddClass("unselect-content"),
+  NO_SELECT_ATTACH  = jsAddClass("unselect-attachments"),
+  NO_TOUCH_CONTENT  = jsAddClass("untouch-content"),
+  NO_TOUCH_ATTACH   = jsAddClass("untouch-attachments"),
+  SHOW_TIMESTAMP    = jsAddClass("show-timestamp")
 }
+
+local msgArgTypes = BonChat.msgArgTypes
 
 local PANEL = {
   Init = function(self)
-    self:SetSize(ScrW() * 0.25, ScrH() * 0.5)
-    self:SetPos(ScrW() * 0.02, (ScrH() - self:GetTall()) - ScrH() * 0.115)
+    self:SetSize(ScrW() * 0.3, ScrH() * 0.435)
+    self:SetPos(ScrW() * 0.02, ScrH() * 0.8 - self:GetTall())
     self:SetMinWidth(self:GetWide())
     self:SetMinHeight(self:GetTall())
     self:SetTitle("")
@@ -90,16 +103,6 @@ local PANEL = {
       lastEscape = escape
     end)
 
-    hook.Add("ChatText", self, function(self, _, _, text, type)
-      self:AppendMessage({}, text)
-    end)
-
-    local clrTeam = Color(24, 162, 35)
-
-    hook.Add("OnPlayerChat", self, function()
-      self:SetMessageOptions({ timestampShown = true }) // set options for next appended message
-    end)
-
     self:CloseFrame()
   end,
   CallJS = function(self, str, ...)
@@ -120,65 +123,79 @@ local PANEL = {
     self:CallJS(tempJS)
     self:ReadyJS()
   end,
-  SetMessageOptions = function(self, options)
-    self.msgOptions = istable(options) and options
-  end,
-  AppendMessage = function(self, options, ...)
+  SendMessage = function(self, msg)
     self:ReadyJS()
 
     -- create a new message object
     self:AddJS("var msg = new Message()")
 
-    -- apply options
-
-    if self.msgOptions then
-      table.Merge(options, self.msgOptions)
-      self.msgOptions = nil
-    end
-
-    for k, v in pairs(options) do
-      if v ~= true then continue end
-      local opt = optionClasses[k]
-      if opt then self:AddJS("msg.MSG_CONTAINER.addClass('%s')", opt) end
-    end
-
-    if options.sender then
-      if IsValid(options.sender) then
-        self:AddJS("msg.MSG_CONTAINER.data('sender', '%s')", options.sender:SteamID())
-      else
-        self:AddJS("msg.MSG_CONTAINER.data('sender', null)")
+    -- set sender of message
+    if IsValid(msg.sender) and msg.sender:IsPlayer() then
+      local steamID = options.sender:SteamID()
+      if steamID ~= "NULL" then -- can be 'NULL' if not authenticated with Steam
+        self:AddJS(jsSetData("sender", steamID))
       end
     end
+    
+    -- apply options
+    local opts = msg:GetOptions()
+    for i = 1, #opts do
+      local opt = opts[i]
+      local rule = optionRules[opt]
+      if rule then self:AddJS(rule) end
+    end
 
-    -- add the message components
-    for _, v in ipairs({...}) do
-      if isstring(v) then
-        self:AddJS("msg.appendMarkdownText('%s')", string.JavascriptSafe(v))
-      elseif istable(v) then
-        -- set the current text color
+    -- add the arguments
+    local args = msg:GetArgs()
+    for i = 1, #args do
+      local arg = args[i]
+      local t = arg.type
+
+      if t == msgArgTypes.TEXT then
+        self:AddJS("msg.appendText('%s')", string.JavascriptSafe(arg.value))
+      elseif t == msgArgTypes.COLOR then
         self:AddJS("msg.setTextColor('rgb(%d,%d,%d)')",
-          isnumber(v.r) and v.r % 256 or 255,
-          isnumber(v.g) and v.g % 256 or 255,
-          isnumber(v.b) and v.b % 256 or 255
+          isnumber(arg.r) and arg.r % 256 or 255,
+          isnumber(arg.g) and arg.g % 256 or 255,
+          isnumber(arg.b) and arg.b % 256 or 255
         );
-      elseif isentity(v) then
-        if v == NULL then
+      elseif t == msgArgTypes.ENTITY then
+        local ent = arg.value
+        if ent == NULL then
           self:AddJS("msg.appendText('NULL')")
-        elseif v:IsPlayer() then
-          local clr = hook.Run("GetTeamColor", v)
-          self:AddJS("msg.appendPlayerName('%s', '%s', '%s')",
-            string.JavascriptSafe(v:Nick()),
+        elseif ent:IsPlayer() then
+          local clr = hook.Run("GetTeamColor", ent)
+          self:AddJS("msg.appendPlayer('%s', '%s', '%s')",
+            string.JavascriptSafe(ent:Nick()),
             "rgb(" .. clr.r .. "," .. clr.g .. "," .. clr.b .. ")",
-            string.JavascriptSafe(v:SteamID())
+            string.JavascriptSafe(ent:SteamID())
           )
         else
-          self:AddJS("msg.appendText('%s')", string.JavascriptSafe(v:GetClass()))
+          self:AddJS("msg.appendText('%s')", string.JavascriptSafe(ent:GetClass()))
         end
+      elseif t == msgArgTypes.MARKDOWN then
+        self:AddJS("msg.appendMarkdown('%s')", string.JavascriptSafe(arg.value))
+      elseif t == msgArgTypes.PLAYER then
+        local clr = arg.color
+        if clr then -- correct any color values
+          clr = Color(
+            isnumber(clr.r) and clr.r % 256 or 255,
+            isnumber(clr.g) and clr.g % 256 or 255,
+            isnumber(clr.b) and clr.b % 256 or 255
+          )
+        end
+
+        self:AddJS("msg.appendPlayer('%s', '%s', '%s')",
+          string.JavascriptSafe(arg.name),
+          clr and "rgb(" .. clr.r .. "," .. clr.g .. "," .. clr.b .. ")" or "",
+          string.JavascriptSafe(arg.steamID or "NULL")
+        )
       end
     end
 
     -- send the message element to the chatbox
     self:AddJS("msg.send()")
+
     self:RunJS()
   end,
   OpenFrame = function(self)

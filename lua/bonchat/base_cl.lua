@@ -1,3 +1,4 @@
+include("bonchat/message.lua")
 include("bonchat/vgui/frame.lua")
 
 function BonChat.Log(...)
@@ -14,12 +15,11 @@ function BonChat.CloseChat()
 end
 
 function BonChat.ReloadChat()
-  if IsValid(BonChat.frame) then BonChat.frame:Remove() end
+  if IsValid(BonChat.frame) then
+    BonChat.CloseChat()
+    BonChat.frame:Remove()
+  end
   BonChat.frame = vgui.Create("BonChat_Frame")
-end
-
-function BonChat.AppendMessage(options, ...)
-  BonChat.frame:AppendMessage(options or {}, ...)
 end
 
 function BonChat.ClearChat()
@@ -62,44 +62,14 @@ function BonChat.GetResource(name)
   return include("bonchat/resources/" .. name .. ".lua")
 end
 
--- override chat functions to use the new chatbox
-
-BonChat.oldChatAddText = BonChat.oldChatAddText or chat.AddText
-function chat.AddText(...)
-  BonChat:AppendMessage({}, ...)
-  BonChat.oldChatAddText(...)
-end
-
-BonChat.oldChatOpen = BonChat.oldChatOpen or chat.Open
-function chat.Open(mode, ...)
-  if BonChat.enabled then
-    BonChat.chatMode = mode
-    BonChat.frame:OpenFrame()
-  end
-  BonChat.oldChatOpen(mode, ...)
-end
-
-BonChat.oldChatClose = BonChat.oldChatClose or chat.Close
-function chat.Close(...)
-  if BonChat.enabled then BonChat.frame:CloseFrame() end
-  BonChat.oldChatClose(...)
-end
-
-local panelMeta = FindMetaTable("Panel")
-local blur = Material("pp/blurscreen")
-
--- custom panel functions
-
-panelMeta.DrawBlur = function(self, layers, density, alpha)
-  surface.SetDrawColor(255, 255, 255, alpha)
-  surface.SetMaterial(blur)
-
-  for i = 1, 3 do
-    blur:SetFloat("$blur", i / layers * density)
-    blur:Recompute()
-    render.UpdateScreenEffectTexture()
-    surface.DrawTexturedRect(-self:GetX(), -self:GetY(), ScrW(), ScrH())
-  end
+local function sendInfoMessage(str)
+  local msg = BonChat.Message()
+  msg:SetCentered()
+  msg:SetUnselectable()
+  msg:SetUntouchable()
+  msg:AppendColor(color_white)
+  msg:AppendMarkdown(str)
+  BonChat.SendMessage(msg)
 end
 
 local function hideDefaultChat(name)
@@ -118,34 +88,11 @@ local function openChat(_, bind, pressed)
   end
 end
 
--- receive player messages sent using the chatbox
-net.Receive("BonChat_say", function()
-  local ply = net.ReadEntity()
-  local text = net.ReadString()
-  local team = net.ReadBool()
-  hook.Run("OnPlayerChat",
-    ply,
-    text,
-    team,
-    IsValid(ply) and not ply:Alive() or false
-  )
-end)
-
--- initializing
-
 function BonChat.InitChatbox()
   BonChat.ReloadChat()
-  BonChat.AppendMessage(
-    {
-      contentCentered = true,
-      contentUnselectable = true,
-      attachmentsCentered = true,
-      attachmentsUnselectable = true,
-      attachmentsUntouchable = true
-    },
-    color_white,
-    ":icon:accept: **BonChat has successfully loaded** https://media.discordapp.net/attachments/292328649711943680/883812645105446922/25.gif"
-  )
+
+  sendInfoMessage(":icon:tick: **BonChat has successfully loaded**")
+
   if BonChat.enabled then
     BonChat.EnableChatbox()
   else
@@ -165,8 +112,89 @@ function BonChat.DisableChatbox()
   BonChat.frame.chatbox:Hide()
 end
 
+-- override chat functions to use the new chatbox
+
+BonChat.oldChatAddText = BonChat.oldChatAddText or chat.AddText
+function chat.AddText(...)
+  local msg = BonChat.Message()
+  msg:AppendArgs(...)
+  BonChat.SendMessage(msg)
+  BonChat.oldChatAddText(...)
+end
+
+BonChat.oldChatOpen = BonChat.oldChatOpen or chat.Open
+function chat.Open(mode, ...)
+  if BonChat.enabled then
+    BonChat.chatMode = mode
+    BonChat.frame:OpenFrame()
+  end
+  BonChat.oldChatOpen(mode, ...)
+end
+
+BonChat.oldChatClose = BonChat.oldChatClose or chat.Close
+function chat.Close(...)
+  if BonChat.enabled then BonChat.frame:CloseFrame() end
+  BonChat.oldChatClose(...)
+end
+
+function BonChat.SendOldChatMessage(...)
+  BonChat.oldChatAddText(...)
+end
+
+-- custom panel functions
+
+local panelMeta = FindMetaTable("Panel")
+local blur = Material("pp/blurscreen")
+
+panelMeta.DrawBlur = function(self, layers, density, alpha)
+  surface.SetDrawColor(255, 255, 255, alpha)
+  surface.SetMaterial(blur)
+
+  for i = 1, 3 do
+    blur:SetFloat("$blur", i / layers * density)
+    blur:Recompute()
+    render.UpdateScreenEffectTexture()
+    surface.DrawTexturedRect(-self:GetX(), -self:GetY(), ScrW(), ScrH())
+  end
+end
+
+-- receive player messages sent using the chatbox
+net.Receive("BonChat_Say", function()
+  local ply = net.ReadEntity()
+  local text = net.ReadString()
+  local team = net.ReadBool()
+  hook.Run("OnPlayerChat",
+    ply,
+    text,
+    team,
+    IsValid(ply) and not ply:Alive() or false
+  )
+end)
+
+-- concommands
+
+concommand.Add("bonchat_reload", function()
+  BonChat.CloseChat()
+  BonChat.ReloadChat()
+  if BonChat.enabled then
+    BonChat.EnableChatbox()
+  else
+    BonChat.DisableChatbox()
+  end
+  sendInfoMessage(":icon:cog: **Chatbox was reloaded**")
+end)
+
+concommand.Add("bonchat_clear", function()
+  BonChat.ClearChat()
+  sendInfoMessage(":icon:bin: **Chatbox was cleared**")
+end)
+
+-- initializing
+
 hook.Add("Initialize", "BonChat_Initialize", BonChat.InitChatbox)
 
 if GAMEMODE then
   BonChat.InitChatbox()
 end
+
+include("bonchat/custom_chat.lua")
