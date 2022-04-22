@@ -1,10 +1,9 @@
 # gmod-bonchat
-#### A chatbox for Garry's Mod with markdown support, emoji support, ability to show images/videos, and some other stuff (WIP)
+#### (WIP) A chatbox for Garry's Mod with markdown support, emoji support, ability to show images/videos, and some other stuff
+Should work on any branch, but intended for usage on `x86-64`
 
 ![](https://user-images.githubusercontent.com/59924045/164146558-dd6eb913-d43e-4692-b10e-e16ee80a10ba.png "BonChat feature showcase")
 ![](https://user-images.githubusercontent.com/59924045/164572492-b4132cf9-31b7-4132-9ac2-0aa88af5090b.png "Custom message examples")
-
-*Should work on any branch, but intended for usage on `x86-64`*
 
 ---
 
@@ -52,11 +51,11 @@ local msg = BonChat.Message()
 BonChat.SendMessage(msg)
 ```
 
-Output:
+#### Output:
 
 ![](https://user-images.githubusercontent.com/59924045/164576612-83366b09-875f-4f06-b2b9-64f7f73025df.png "Output message")
 
-See the [wiki](https://github.com/Bonyoze/gmod-bonchat/wiki) for more information
+👉 See the [wiki](https://github.com/Bonyoze/gmod-bonchat/wiki) for more information
 
 ---
 
