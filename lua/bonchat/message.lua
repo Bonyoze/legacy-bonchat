@@ -147,6 +147,38 @@ function BonChat.Message()
   }, objMessage)
 end
 
-function BonChat.SendMessage(msg)
+local color_default = Color(151, 211, 255)
+
+function BonChat.SendMessage(msg, sendOld)
   BonChat.frame:SendMessage(msg)
+  if sendOld then
+    local tbl = {}
+    local args = msg:GetArgs()
+    local len = #args
+    local color = color_default
+
+    for i = 1, len do
+      local arg = args[i]
+      local t = arg.type
+
+      if t == msgArgTypes.TEXT or t == msgArgTypes.MARKDOWN or t == msgArgTypes.ENTITY then
+        table.insert(tbl, arg.value)
+      elseif t == msgArgTypes.COLOR then
+        local clr = Color(arg.r, arg.g, arg.b)
+        table.insert(tbl, clr)
+        color = clr
+      elseif t == msgArgTypes.PLAYER then
+        if arg.color then
+          table.insert(tbl, arg.color)
+        end
+        table.insert(tbl, arg.name)
+        if arg.color then
+          table.insert(tbl, color)
+        end
+      end
+    end
+
+    BonChat.SuppressDefaultMsg()
+    chat.AddText(unpack(tbl))
+  end
 end
