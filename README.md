@@ -69,6 +69,7 @@
 |`BonChat.OpenImage(string url, number w, number h, number minW, number minH)`|Opens an image in the BonChat browser panel
 |`BonChat.Message()`|Returns a Message object
 |`BonChat.SendMessage(Message msg)`|Sends a message to the chatbox
+|`BonChat.SendDefaultMsg(Message msg)`|Sends a message to the default chatbox<br>*(Note: may not look correct with `MARKDOWN` or `PLAYER` type)*
 |`BonChat.SuppressDefaultMsg()`|Makes it so the next time `chat.AddText()` is called later that tick, the message won't be sent to the BonChat chatbox
 
 ## Message Methods
@@ -92,6 +93,24 @@
 |`Message:AppendMarkdown(string str)`|Adds text with markdown support
 |`Message:AppendPlayer(string name [, Color clr] [, string steamID] )`|Adds text that gets parsed in the style of a player entity
 |`Message:AppendArgs(any...)`|Equivalent to AppendType but multiple arguments are allowed
+
+|Argument Type Enums|Info
+|-|-
+|TEXT|
+|COLOR|
+|ENTITY|
+|MARKDOWN|Text but with markdown support
+|PLAYER|Mimics the styling for a player, but the name, color, and steam id can be specified
+
+|Option Enums|Info
+|-|-
+|CENTER_CONTENT|Horizontally center text content
+|CENTER_ATTACH|Horizontally center attachments
+|NO_SELECT_CONTENT|Make text content not able to be highlighted
+|NO_SELECT_ATTACH|Make attachments not able to be highlighted
+|NO_TOUCH_CONTENT|Prevent mouse interaction on text content
+|NO_TOUCH_ATTACH|Prevent mouse interaction on attachments
+|SHOW_TIMESTAMP|Add a timestamp to the start of the text content
 
 
 Sending a message in BonChat:
