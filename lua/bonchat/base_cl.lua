@@ -54,7 +54,6 @@ function BonChat.OpenPage(url)
 end
 
 function BonChat.OpenImage(url, w, h, minW, minH)
-  if BRANCH == "unknown" then return BonChat.OpenURL(url) end
   BonChat.frame.browser:OpenImage(url, w, h, minW, minH)
 end
 
@@ -123,7 +122,6 @@ end
 
 BonChat.oldChatAddText = BonChat.oldChatAddText or chat.AddText
 function chat.AddText(...)
-  print(suppressDefault)
   if not suppressDefault then
     local msg = BonChat.Message()
     msg:AppendArgs(...)
