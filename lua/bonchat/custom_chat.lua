@@ -122,7 +122,7 @@ hook.Add("player_changename", "BonChat_PlayerNameChange", function(data)
   BonChat.SendMessage(msg)
 end)
 
--- add server and misc messages to the chatbox
+-- server and misc messages
 hook.Add("ChatText", "BonChat_ServerMiscMessages", function(_, _, text, type)
   if type == "servermsg" then
     local msg = BonChat.Message()
@@ -134,13 +134,14 @@ hook.Add("ChatText", "BonChat_ServerMiscMessages", function(_, _, text, type)
     msg:AppendText(text)
     BonChat.SendMessage(msg)
   else
-    -- prevent the other messages since we customized them
+    -- prevent the other default messages
     BonChat.SuppressDefaultMsg()
   end
 end)
 
 local color_achieve = Color(255, 200, 0)
 
+-- achievement messages
 hook.Add("OnAchievementAchieved", "BonChat_AchieveMessages", function(ply, achid)
   local msg = BonChat.Message()
   msg:ShowTimestamp()
@@ -182,6 +183,7 @@ hook.Add("OnPlayerChat", "BonChat_PlayerMessages", function(ply, text, teamChat,
     msg:AppendMarkdown(text)
     BonChat.SendMessage(msg)
   end
-
+  
+  -- prevent default so we don't get duplicates
   BonChat.SuppressDefaultMsg()
 end)
