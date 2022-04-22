@@ -26,12 +26,12 @@ function BonChat.ClearChat()
   BonChat.frame:CallJS("chatbox.html('')")
 end
 
-function BonChat.Say(text)
+function BonChat.Say(text, mode)
   if not text or #text == 0 then return end
 
   net.Start("BonChat_say")
     net.WriteString(string.Left(text, BonChat.GetMsgMaxLen()))
-    net.WriteBool(BonChat.chatMode ~= 1)
+    net.WriteBool(mode and mode ~= 1 or BonChat.chatMode ~= 1)
   net.SendToServer()
 end
 
@@ -88,25 +88,25 @@ local function openChat(_, bind, pressed)
   end
 end
 
-function BonChat.InitChatbox()
+function BonChat.InitChat()
   BonChat.ReloadChat()
 
   sendInfoMessage(":icon:tick: **BonChat has successfully loaded**")
 
   if BonChat.enabled then
-    BonChat.EnableChatbox()
+    BonChat.EnableChat()
   else
-    BonChat.DisableChatbox()
+    BonChat.DisableChat()
   end
 end
 
-function BonChat.EnableChatbox()
+function BonChat.EnableChat()
   hook.Add("HUDShouldDraw", "BonChat_HideDefaultChat", hideDefaultChat)
   hook.Add("PlayerBindPress", "BonChat_OpenChat", openChat)
   BonChat.frame.chatbox:Show()
 end
 
-function BonChat.DisableChatbox()
+function BonChat.DisableChat()
   hook.Remove("HUDShouldDraw", "BonChat_HideDefaultChat")
   hook.Remove("PlayerBindPress", "BonChat_OpenChat")
   BonChat.frame.chatbox:Hide()
@@ -185,9 +185,9 @@ concommand.Add("bonchat_reload", function()
   BonChat.CloseChat()
   BonChat.ReloadChat()
   if BonChat.enabled then
-    BonChat.EnableChatbox()
+    BonChat.EnableChat()
   else
-    BonChat.DisableChatbox()
+    BonChat.DisableChat()
   end
   sendInfoMessage(":icon:cog: **Chatbox was reloaded**")
 end)
@@ -199,10 +199,10 @@ end)
 
 -- initializing
 
-hook.Add("Initialize", "BonChat_Initialize", BonChat.InitChatbox)
+hook.Add("Initialize", "BonChat_Initialize", BonChat.InitChat)
 
 if GAMEMODE then
-  BonChat.InitChatbox()
+  BonChat.InitChat()
 end
 
 include("bonchat/custom_chat.lua")

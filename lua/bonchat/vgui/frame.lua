@@ -188,7 +188,7 @@ local PANEL = {
         self:AddJS("msg.appendPlayer('%s', '%s', '%s')",
           string.JavascriptSafe(arg.name),
           clr and "rgb(" .. clr.r .. "," .. clr.g .. "," .. clr.b .. ")" or "",
-          string.JavascriptSafe(arg.steamID or "NULL")
+          string.JavascriptSafe(arg.steamID or "")
         )
       end
     end

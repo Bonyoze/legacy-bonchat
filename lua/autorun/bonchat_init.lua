@@ -28,9 +28,9 @@ cvars.AddChangeCallback(BonChat.CVAR_ENABLED, function(_, _, new)
   if BonChat.enabled == enabled then return end
   
   if enabled then
-    BonChat.EnableChatbox()
+    BonChat.EnableChat()
   else
-    BonChat.DisableChatbox()
+    BonChat.DisableChat()
   end
 
   BonChat.enabled = enabled

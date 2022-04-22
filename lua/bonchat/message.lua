@@ -72,7 +72,7 @@ function objMessage.RemoveOptions(self, ...)
 end
 
 function objMessage.GetArgs(self)
-  return self.args
+  return table.Copy(self.args)
 end
 
 function objMessage.GetOptions(self)
