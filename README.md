@@ -38,7 +38,7 @@
 
 ---
 
-Sending a message in BonChat:
+### Sending A Message:
 
 ```lua
 local msg = BonChat.Message()
