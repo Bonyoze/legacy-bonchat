@@ -149,36 +149,37 @@ end
 
 local color_default = Color(151, 211, 255)
 
-function BonChat.SendMessage(msg, sendOld)
+function BonChat.SendMessage(msg)
   BonChat.frame:SendMessage(msg)
-  if sendOld then
-    local tbl = {}
-    local args = msg:GetArgs()
-    local len = #args
-    local color = color_default
+end
 
-    for i = 1, len do
-      local arg = args[i]
-      local t = arg.type
+function BonChat.SendDefaultMsg(msg)
+  local tbl = {}
+  local args = msg:GetArgs()
+  local len = #args
+  local color = color_default
 
-      if t == msgArgTypes.TEXT or t == msgArgTypes.MARKDOWN or t == msgArgTypes.ENTITY then
-        table.insert(tbl, arg.value)
-      elseif t == msgArgTypes.COLOR then
-        local clr = Color(arg.r, arg.g, arg.b)
-        table.insert(tbl, clr)
-        color = clr
-      elseif t == msgArgTypes.PLAYER then
-        if arg.color then
-          table.insert(tbl, arg.color)
-        end
-        table.insert(tbl, arg.name)
-        if arg.color then
-          table.insert(tbl, color)
-        end
+  for i = 1, len do
+    local arg = args[i]
+    local t = arg.type
+
+    if t == msgArgTypes.TEXT or t == msgArgTypes.MARKDOWN or t == msgArgTypes.ENTITY then
+      table.insert(tbl, arg.value)
+    elseif t == msgArgTypes.COLOR then
+      local clr = Color(arg.r, arg.g, arg.b)
+      table.insert(tbl, clr)
+      color = clr
+    elseif t == msgArgTypes.PLAYER then
+      if arg.color then
+        table.insert(tbl, arg.color)
+      end
+      table.insert(tbl, arg.name)
+      if arg.color then
+        table.insert(tbl, color)
       end
     end
-
-    BonChat.SuppressDefaultMsg()
-    chat.AddText(unpack(tbl))
   end
+
+  BonChat.SuppressDefaultMsg()
+  chat.AddText(unpack(tbl))
 end

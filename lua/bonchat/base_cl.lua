@@ -111,14 +111,14 @@ function BonChat.DisableChat()
   BonChat.frame.chatbox:Hide()
 end
 
--- override chat functions to use the new chatbox
-
 local suppressDefault = false
 
 function BonChat.SuppressDefaultMsg()
   suppressDefault = true
   timer.Simple(0, function() suppressDefault = false end)
 end
+
+-- override chat functions to use the new chatbox
 
 BonChat.oldChatAddText = BonChat.oldChatAddText or chat.AddText
 function chat.AddText(...)
