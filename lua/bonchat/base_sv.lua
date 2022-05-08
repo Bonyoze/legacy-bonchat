@@ -2,6 +2,7 @@
 AddCSLuaFile("bonchat/message.lua")
 AddCSLuaFile("bonchat/custom_chat.lua")
 AddCSLuaFile("bonchat/resources/chatbox.html.lua")
+AddCSLuaFile("bonchat/resources/image.html.lua")
 AddCSLuaFile("bonchat/resources/emojis.json.lua")
 AddCSLuaFile("bonchat/vgui/frame.lua")
 AddCSLuaFile("bonchat/vgui/settings.lua")

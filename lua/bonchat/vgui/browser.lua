@@ -35,7 +35,7 @@ local PANEL = {
     self.dhtml = self:Add("DHTML")
     self.dhtml:Dock(FILL)
 
-    self.dhtml.ConsoleMessage = function() end
+    --self.dhtml.ConsoleMessage = function() end
     self.dhtml.OnFocusChanged = function(self, gained)
       if not gained then
         self.OnDocumentReady = function() end
@@ -71,29 +71,9 @@ local PANEL = {
     self:SetMinWidth(minW)
     self:SetMinHeight(minH)
     
-    self.dhtml:SetHTML([[
-      <style>
-        body {
-          margin: 0;
-          -webkit-user-select: none;
-          user-select: none;
-        }
-        img {
-          width: 100%;
-          height: 100%;
-        }
-      </style>
-      <script type="text/javascript" src="asset://garrysmod/html/js/thirdparty/jquery.js"></script>
-    ]])
-
+    self.dhtml:SetHTML(BonChat.GetResource("image.html"))
     self.dhtml.OnDocumentReady = function(self)
-      self:Call(string.format([[
-        $('<img>')
-          .attr('src', '%s')
-          .on("load", function() {
-            $(this).appendTo($('body'));
-          });
-      ]], string.JavascriptSafe(url)))
+      self:Call(string.format("loadImage('%s')", string.JavascriptSafe(url)))
     end
 
     self:Show()

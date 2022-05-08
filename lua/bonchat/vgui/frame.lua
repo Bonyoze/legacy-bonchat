@@ -2,8 +2,20 @@ include("bonchat/vgui/settings.lua")
 include("bonchat/vgui/chatbox.lua")
 include("bonchat/vgui/browser.lua")
 
+local function parseColorStyle(clr)
+  return "rgb("
+    .. (isnumber(clr.r) and clr.r % 256 or 255)
+    .. ","
+    .. (isnumber(clr.g) and clr.g % 256 or 255)
+    .. ","
+    .. (isnumber(clr.b) and clr.b % 256 or 255)
+    .. ")"
+end
+
 local function jsAddClass(val)
-  return string.format("msg.MSG_CONTAINER.addClass('%s')", string.JavascriptSafe(val))
+  return string.format("msg.MSG_CONTAINER.addClass('%s')",
+    string.JavascriptSafe(val)
+  )
 end
 
 local function jsSetData(name, val)
@@ -164,10 +176,9 @@ local PANEL = {
         if ent == NULL then
           self:AddJS("msg.appendText('NULL')")
         elseif ent:IsPlayer() then
-          local clr = hook.Run("GetTeamColor", ent)
           self:AddJS("msg.appendPlayer('%s', '%s', '%s')",
             string.JavascriptSafe(ent:Nick()),
-            "rgb(" .. clr.r .. "," .. clr.g .. "," .. clr.b .. ")",
+            parseColorStyle(hook.Run("GetTeamColor", ent)),
             string.JavascriptSafe(ent:SteamID())
           )
         else
@@ -176,18 +187,9 @@ local PANEL = {
       elseif t == msgArgTypes.MARKDOWN then
         self:AddJS("msg.appendMarkdown('%s')", string.JavascriptSafe(arg.value))
       elseif t == msgArgTypes.PLAYER then
-        local clr = arg.color
-        if clr then -- correct any color values
-          clr = Color(
-            isnumber(clr.r) and clr.r % 256 or 255,
-            isnumber(clr.g) and clr.g % 256 or 255,
-            isnumber(clr.b) and clr.b % 256 or 255
-          )
-        end
-
         self:AddJS("msg.appendPlayer('%s', '%s', '%s')",
           string.JavascriptSafe(arg.name),
-          clr and "rgb(" .. clr.r .. "," .. clr.g .. "," .. clr.b .. ")" or "",
+          arg.color and parseColorStyle(arg.color) or "",
           string.JavascriptSafe(arg.steamID or "")
         )
       end

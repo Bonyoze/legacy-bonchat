@@ -161,28 +161,26 @@ local color_team = Color(24, 162, 35) -- (TEAM)
 
 -- player chat messages
 hook.Add("OnPlayerChat", "BonChat_PlayerMessages", function(ply, text, teamChat, isDead)
-  do
-    local msg = BonChat.Message()
-    msg:ShowTimestamp()
-    if isDead then
-      msg:AppendColor(color_dead)
-      msg:AppendText("*DEAD* ")
-    end
-    if teamChat then
-      msg:AppendColor(color_team)
-      msg:AppendText("(TEAM) ")
-    end
-    if IsValid(ply) then
-      msg:AppendEntity(ply)
-    else
-      -- send 'Console' as if it were a player
-      msg:AppendPlayer("Console")
-    end
-    msg:AppendColor(color_white)
-    msg:AppendText(": ")
-    msg:AppendMarkdown(text)
-    BonChat.SendMessage(msg)
+  local msg = BonChat.Message()
+  msg:ShowTimestamp()
+  if isDead then
+    msg:AppendColor(color_dead)
+    msg:AppendText("*DEAD* ")
   end
+  if teamChat then
+    msg:AppendColor(color_team)
+    msg:AppendText("(TEAM) ")
+  end
+  if IsValid(ply) then
+    msg:AppendEntity(ply)
+  else
+    -- send 'Console' as if it were a player
+    msg:AppendPlayer("Console")
+  end
+  msg:AppendColor(color_white)
+  msg:AppendText(": ")
+  msg:AppendMarkdown(text)
+  BonChat.SendMessage(msg)
   
   -- prevent default so we don't get duplicates
   BonChat.SuppressDefaultMsg()
