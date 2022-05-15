@@ -67,7 +67,7 @@ net.Receive("BonChat_ConnectDisconnect", function()
   msg:ShowTimestamp()
   msg:AppendColor(color_connecting)
   msg:AppendMarkdown(
-    ":icon:status_"
+    ":i:status_"
     .. (connecting and "online" or "offline")
     .. ": **Player "
     .. name
@@ -90,7 +90,7 @@ net.Receive("BonChat_JoinLeave", function()
   local msg = BonChat.Message()
   msg:ShowTimestamp()
   msg:AppendMarkdown(
-    ":icon:status_"
+    ":i:status_"
     .. (joined and "online" or "offline")
     .. ": "
   )
@@ -114,7 +114,7 @@ hook.Add("player_changename", "BonChat_PlayerNameChange", function(data)
 
   local msg = BonChat.Message()
   msg:ShowTimestamp()
-  msg:AppendMarkdown(":icon:user_edit: ")
+  msg:AppendMarkdown(":i:user_edit: ")
   msg:AppendPlayer(data.oldname, clr, steamID)
   msg:AppendColor(color_white)
   msg:AppendText(" changed their name to ")
@@ -127,7 +127,7 @@ hook.Add("ChatText", "BonChat_ServerMiscMessages", function(_, _, text, type)
   if type == "servermsg" then
     local msg = BonChat.Message()
     msg:ShowTimestamp()
-    msg:AppendMarkdown(":icon:server: **" .. text .. "**")
+    msg:AppendMarkdown(":i:server: **" .. text .. "**")
     BonChat.SendMessage(msg)
   elseif type == "none" then -- just send this as a normal message
     local msg = BonChat.Message()
@@ -145,7 +145,7 @@ local color_achieve = Color(255, 200, 0)
 hook.Add("OnAchievementAchieved", "BonChat_AchieveMessages", function(ply, achid)
   local msg = BonChat.Message()
   msg:ShowTimestamp()
-  msg:AppendMarkdown(":icon:award_star_gold_3: ")
+  msg:AppendMarkdown(":i:award_star_gold_3: ")
   msg:AppendEntity(ply)
   msg:AppendColor(color_white)
   msg:AppendText(" earned the achievement ")

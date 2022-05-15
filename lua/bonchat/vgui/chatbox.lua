@@ -16,11 +16,12 @@ local PANEL = {
     self:AddFunction("glua", "say", BonChat.Say)
     self:AddFunction("glua", "openPage", BonChat.OpenPage)
     self:AddFunction("glua", "openImage", BonChat.OpenImage)
+    self:AddFunction("glua", "setClipboardText", SetClipboardText)
     
     -- get emoji data and send to panel
     self:Call(string.format(
-      "const TWEMOJI_DATA = JSON.parse('%s')",
-      BonChat.GetResource("emojis.json")
+      "const EMOJI_DATA = JSON.parse('%s')",
+      BonChat.GetResource("emoji_data.json")
     ))
   end
 }

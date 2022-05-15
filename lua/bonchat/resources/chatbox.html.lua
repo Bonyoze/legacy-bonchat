@@ -2,16 +2,13 @@ return [[<html>
   <head>
     <title>BonChat Chatbox</title>
     <style>
-      html, body {
-        margin: 0;
-        overflow: hidden;
-      }
-
       html {
         font-size: 14px;
       }
 
       body {
+        margin: 0;
+        overflow: hidden;
         font-family: Verdana;
         font-size: 1rem;
         line-height: 1.375rem;
@@ -19,12 +16,12 @@ return [[<html>
         opacity: 0.9999; /* i have no idea why, but not fully opaque makes the font render sharper in Awesomium */
       }
 
-      /* hiding when chatbox is closed */
+      /* hiding when panel is closed */
 
-      .chatbox-closed #entry {
+      .panel-closed #chat-entry {
         display: none;
       }
-      .chatbox-closed #chatbox::-webkit-scrollbar-track, .chatbox-closed #chatbox::-webkit-scrollbar-thumb, .chatbox-closed #chatbox .message {
+      .panel-closed #chatbox::-webkit-scrollbar-track, .panel-closed #chatbox::-webkit-scrollbar-thumb, .panel-closed #chatbox .message {
         background: transparent;
       }
 
@@ -53,7 +50,7 @@ return [[<html>
         border-radius: 4px;
       }
 
-      #entry {
+      #chat-entry {
         position: fixed;
         left: 0;
         right: 0;
@@ -165,6 +162,7 @@ return [[<html>
         display: inline-block;
         width: 1.375rem;
         height: 1.375rem;
+        cursor: pointer;
       }
       .emoji.jumbo {
         width: 3em;
@@ -174,7 +172,7 @@ return [[<html>
   </head>
   <body>
     <div id="chatbox"></div>
-    <div contenteditable id="entry" spellcheck="false"></div>
+    <div contenteditable id="chat-entry" spellcheck="false"></div>
   </body>
   <script type="text/javascript" src="asset://garrysmod/html/js/thirdparty/jquery.js"></script>
   <script> // whitelist script
@@ -204,8 +202,8 @@ return [[<html>
   </script>
   <script> // emojis script
     function getEmojiByShortcode(shortcode) {
-      // TWEMOJI_DATA constant is set by GLua
-      if (TWEMOJI_DATA) return TWEMOJI_DATA[shortcode];
+      // EMOJI_DATA constant is set by GLua using emoji_data.json
+      if (EMOJI_DATA) return EMOJI_DATA[shortcode];
     }
 
     const TWEMOJI_BASE = "https://twemoji.maxcdn.com/v/14.0.2/svg/",
@@ -580,9 +578,9 @@ return [[<html>
   </script>
   <script>
     const chatbox = $("#chatbox"),
-    entry = $("#entry");
+    chatEntry = $("#chat-entry");
 
-    var chatboxIsOpen = false,
+    var panelIsOpen = false,
     msgMaxLen = 2048; // temporary
 
     function getTimestampText(s) { // H:MM AM/PM
@@ -767,8 +765,7 @@ return [[<html>
         this._loadEmojis();
 
         // start fade out animation
-        if (!chatboxIsOpen)
-          this.MSG_CONTAINER.startFadeOut(3000, 10000);
+        if (!panelIsOpen) this.MSG_CONTAINER.startFadeOut(3000, 10000);
       }
     };
 
@@ -815,10 +812,10 @@ return [[<html>
       e.attr("src", src);
     }*/
 
-    entry
+    chatEntry
       .on("keypress", function(e) {
         // prevent newlines and exceeding the char limit
-        return !e.which != 13 && !e.ctrlKey && !e.metaKey && !e.altKey && e.which != 8 && entry.text().length < msgMaxLen;
+        return e.which != 13 && !e.ctrlKey && !e.metaKey && !e.altKey && e.which != 8 && chatEntry.text().length < msgMaxLen;
       })
       .on("paste", function(e) {
         // prevent pasting html or newlines into the entry
@@ -828,17 +825,18 @@ return [[<html>
           document.execCommand("insertText", false,
             paste
               .replace(/[\r\n]/g, "") // remove newlines
-              .substring(0, msgMaxLen - entry.text().length + document.getSelection().toString().length) // make sure pasting it won't exceed the char limit);
+              .substring(0, msgMaxLen - chatEntry.text().length + document.getSelection().toString().length) // make sure pasting it won't exceed the char limit
           )
         }
       });
 
     $(document)
-      .on("click", function(e) { // prevent page redirects and instead call a lua function
+      .on("click", function(e) {
         var elem = $(e.target),
         url = elem.attr("href") || elem.parents().attr("href");
-        if (url) {
-          event.preventDefault(); // prevent redirect
+        if (url) { // check if clicking would've caused a redirect
+          // prevent page redirect and instead open the image with glua
+          event.preventDefault();
           if (elem.is("img"))
             glua.openImage(url,
               elem.prop("naturalWidth"),
@@ -848,19 +846,20 @@ return [[<html>
             );
           else
             glua.openPage(url);
-        }
+        } else if (elem.hasClass("emoji")) // check if clicked on an emoji
+          glua.setClipboardText(elem.attr("alt")); // copy emoji to clipboard
       });
     
-    function CHATBOX_PANEL_OPEN() {
-      chatboxIsOpen = true;
-      $("html").removeClass("chatbox-closed");
-      entry.focus(); // focus so the user can type in it
+    function PANEL_OPEN() {
+      panelIsOpen = true;
+      $("html").removeClass("panel-closed");
+      chatEntry.focus(); // focus so the user can type in it
       $(".message").resetFadeOut();
     }
-    function CHATBOX_PANEL_CLOSE() {
-      chatboxIsOpen = false;
-      $("html").addClass("chatbox-closed");
-      entry.text(''); // clear the entry
+    function PANEL_CLOSE() {
+      panelIsOpen = false;
+      $("html").addClass("panel-closed");
+      chatEntry.text(""); // clear the entry
       scrollToBottom(); // reset scroll
       $(".message").startFadeOut(3000, 10000);
     }

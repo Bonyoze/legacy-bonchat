@@ -90,7 +90,7 @@ end
 function BonChat.InitChat()
   BonChat.ReloadChat()
 
-  sendInfoMessage(":icon:tick: **BonChat has successfully loaded**")
+  sendInfoMessage(":i:tick: **BonChat has successfully loaded**")
 
   if BonChat.enabled then
     BonChat.EnableChat()
@@ -134,7 +134,7 @@ end
 
 BonChat.oldChatOpen = BonChat.oldChatOpen or chat.Open
 function chat.Open(mode, ...)
-  if BonChat.enabled then
+  if BonChat.enabled and IsValid(BonChat.frame) then
     BonChat.chatMode = mode
     BonChat.frame:OpenFrame()
   end
@@ -143,7 +143,7 @@ end
 
 BonChat.oldChatClose = BonChat.oldChatClose or chat.Close
 function chat.Close(...)
-  if BonChat.enabled then BonChat.frame:CloseFrame() end
+  if BonChat.enabled and IsValid(BonChat.frame) then BonChat.frame:CloseFrame() end
   BonChat.oldChatClose(...)
 end
 
@@ -187,12 +187,12 @@ concommand.Add("bonchat_reload", function()
   else
     BonChat.DisableChat()
   end
-  sendInfoMessage(":icon:cog: **Chatbox was reloaded**")
+  sendInfoMessage(":i:cog: **Chatbox was reloaded**")
 end)
 
 concommand.Add("bonchat_clear", function()
   BonChat.ClearChat()
-  sendInfoMessage(":icon:bin: **Chatbox was cleared**")
+  sendInfoMessage(":i:bin: **Chatbox was cleared**")
 end)
 
 -- initializing

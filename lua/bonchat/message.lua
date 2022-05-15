@@ -26,7 +26,7 @@ local msgOptions = enum {
 
 local objMessage = {}
 objMessage.__index = objMessage
-objMessage.__tostring = function(self) return "BonChat Message" end
+objMessage.__tostring = function() return "BonChat Message" end
 
 function objMessage.SetPlayer(self, ply)
   if ply ~= NULL and not ply:IsPlayer() then return end
