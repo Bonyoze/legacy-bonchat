@@ -212,7 +212,7 @@ local PANEL = {
 
           self:SetTitle("Steam (" .. steamQueryTotals[query] ..  " results)")
 
-          callback(parsePage(steamQueryCache[query][page]), steamQueryTotals[query])
+          callback(parsePage(steamQueryCache[query][page], steamQueryTotals[query]))
         end)()
       end
     end
@@ -260,6 +260,7 @@ local PANEL = {
       -- start search
       self:QuerySearch(string.gsub(self.lastQuery, "[%s:]", ""), self.pageNum + 1, function(result)
         if clear then self:ClearPages() end
+        print(#result)
         self:AppendPage(result, #result < 100)
       end)
     end
