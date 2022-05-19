@@ -18,13 +18,13 @@ return [[<html>
 
       /* hiding when panel is closed */
 
-      .panel-closed #chat-entry {
+      .panel-closed #chat-container {
         display: none;
       }
       .panel-closed #chatbox::-webkit-scrollbar-track, .panel-closed #chatbox::-webkit-scrollbar-thumb, .panel-closed #chatbox .message {
         background: transparent;
       }
-
+      
       #chatbox {
         display: block;
         position: absolute;
@@ -50,19 +50,35 @@ return [[<html>
         border-radius: 4px;
       }
 
-      #chat-entry {
+      #chat-container {
         position: fixed;
+        padding: 4px;
         left: 0;
         right: 0;
         bottom: 0;
-        padding: 4px;
+        background: rgba(0,0,0,0.5);
+        border-radius: 4px;
+      }
+      #chat-button {
+        float: right;
+        margin-left: 2px;
+        width: 1.375rem;
+        height: 1.375rem;
+        cursor: pointer;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      #chat-entry {
         resize: none;
         overflow: hidden;
         outline: none;
-        background: rgba(0,0,0,0.5);
-        border-radius: 4px;
         color: #fff;
         white-space: nowrap;
+      }
+      #chat-entry[placeholder]:empty:before {
+        content: attr(placeholder);
+        position: absolute;
+        opacity: 0.65;
       }
 
       .timestamp {
@@ -172,7 +188,10 @@ return [[<html>
   </head>
   <body>
     <div id="chatbox"></div>
-    <div contenteditable id="chat-entry" spellcheck="false"></div>
+    <div id="chat-container">
+      <img id="chat-button" src="asset://garrysmod/materials/icon16/tick.png">
+      <div contenteditable id="chat-entry" spellcheck="false" oninput="if(this.innerHTML.trim()==='<br>')this.innerHTML=''"></div>
+    </div>
   </body>
   <script type="text/javascript" src="asset://garrysmod/html/js/thirdparty/jquery.js"></script>
   <script> // whitelist script
@@ -190,7 +209,9 @@ return [[<html>
       // Imgur
       "i.imgur.com",
       // Tenor
-      "tenor.com"
+      "tenor.com",
+      // Facepunch
+      "files.facepunch.com"
     ];
 
     function isWhitelistedURL(href) {
@@ -201,8 +222,9 @@ return [[<html>
     }
   </script>
   <script> // emojis script
+    var EMOJI_DATA = {}; // EMOJI_DATA gets populated by GLua
+
     function getEmojiByShortcode(shortcode) {
-      // EMOJI_DATA constant is set by GLua using emoji_data.json
       if (EMOJI_DATA) return EMOJI_DATA[shortcode];
     }
 
@@ -578,10 +600,11 @@ return [[<html>
   </script>
   <script>
     const chatbox = $("#chatbox"),
+    chatButton = $("#chat-button"),
     chatEntry = $("#chat-entry");
 
     var panelIsOpen = false,
-    msgMaxLen = 2048; // temporary
+    msgMaxLen = 126; // gmod's chat message limit
 
     function getTimestampText(s) { // H:MM AM/PM
       function pad(n) {
@@ -645,10 +668,9 @@ return [[<html>
     function Message() {
       this.MAX_ATTACHMENTS = 5;
 
-      this.MSG_CONTAINER = $("<div class='message'>");
-
-      this.MSG_CONTENT = $("<div class='message-content'>").appendTo(this.MSG_CONTAINER);
-      this.MSG_ATTACHMENTS = $("<div class='message-attachments'>").appendTo(this.MSG_CONTAINER);
+      this.MSG_WRAPPER = $("<div class='message'>");
+      this.MSG_CONTENT = $("<div class='message-content'>").appendTo(this.MSG_WRAPPER);
+      this.MSG_ATTACHMENTS = $("<div class='message-attachments'>").appendTo(this.MSG_WRAPPER);
       
       this.textColor = "#97d3ff"; // this is the default text color
 
@@ -682,7 +704,7 @@ return [[<html>
       this._loadAttachments = function() {
         var maxAttachments = this.MAX_ATTACHMENTS,
         attachments = this.MSG_ATTACHMENTS,
-        links = this.MSG_CONTAINER.find(".link").slice(0, this.MAX_ATTACHMENTS);
+        links = this.MSG_WRAPPER.find(".link").slice(0, this.MAX_ATTACHMENTS);
         
         // keep only whitelisted links and remove duplicates
         var seen = {}
@@ -725,7 +747,7 @@ return [[<html>
         });
       };
       this._loadEmojis = function() {
-        this.MSG_CONTAINER.find(".pre-emoji").each(function() {
+        this.MSG_WRAPPER.find(".pre-emoji").each(function() {
           var pre = $(this),
           url = pre.attr("src"),
           img = $("<img>")
@@ -743,19 +765,19 @@ return [[<html>
       };
       this.send = function() {
         // set send time
-        this.MSG_CONTAINER.data({
+        this.MSG_WRAPPER.data({
           sendTime: Date.now()
         });
 
         // show timestamp
-        if (this.MSG_CONTAINER.hasClass("show-timestamp"))
+        if (this.MSG_WRAPPER.hasClass("show-timestamp"))
           this.MSG_CONTENT.prepend(
             $("<span class='timestamp'>")
-              .text(getTimestampText(this.MSG_CONTAINER.data("sendTime")))
+              .text(getTimestampText(this.MSG_WRAPPER.data("sendTime")))
           );
 
         var scrolled = isFullyScrolled();
-        this.MSG_CONTAINER.appendTo(chatbox);
+        this.MSG_WRAPPER.appendTo(chatbox);
         if (scrolled) scrollToBottom();
 
         // load attachments
@@ -765,7 +787,7 @@ return [[<html>
         this._loadEmojis();
 
         // start fade out animation
-        if (!panelIsOpen) this.MSG_CONTAINER.startFadeOut(3000, 10000);
+        if (!panelIsOpen) this.MSG_WRAPPER.startFadeOut(3000, 10000);
       }
     };
 
@@ -781,36 +803,12 @@ return [[<html>
         })
         .attr("src", src);
     }
-
-    /*function checkVideoContent(src, success, fail) {
-      var e = $("<video>");
-      console.log("testing video")
-      e.on("loadedmetadata", function() {
-        console.log("test2")
-        if (e.prop("videoHeight") && e.prop("videoWidth"))
-          success();
-        else {
-          console.log("test3")
-          fail();
-        }
+    
+    chatButton
+      .on("click", function() {
+        glua.say(chatEntry.text());
+        chatEntry.text("");
       });
-      e.on("error", fail);
-      e.append($("<source>").attr("src", src));
-      e.prop("preload", "metadata");
-      //e.get(0).play();
-    }
-
-    function checkAudioContent(src, success, fail) {
-      var e = $("<audio>");
-      console.log("testing audio")
-      e.prop("preload", "metadata");
-      e.on("loadedmetadata", function() {
-        console.log("" + e.get(0).duration)
-        success();
-      });
-      e.on("error", fail);
-      e.attr("src", src);
-    }*/
 
     chatEntry
       .on("keypress", function(e) {
@@ -826,7 +824,7 @@ return [[<html>
             paste
               .replace(/[\r\n]/g, "") // remove newlines
               .substring(0, msgMaxLen - chatEntry.text().length + document.getSelection().toString().length) // make sure pasting it won't exceed the char limit
-          )
+          );
         }
       });
 
@@ -835,7 +833,7 @@ return [[<html>
         var elem = $(e.target),
         url = elem.attr("href") || elem.parents().attr("href");
         if (url) { // check if clicking would've caused a redirect
-          // prevent page redirect and instead open the image with glua
+          // prevent page redirect and instead open the image with Glua
           event.preventDefault();
           if (elem.is("img"))
             glua.openImage(url,
@@ -850,12 +848,15 @@ return [[<html>
           glua.setClipboardText(elem.attr("alt")); // copy emoji to clipboard
       });
     
-    function PANEL_OPEN() {
+    function PANEL_OPEN(mode) {
       panelIsOpen = true;
       $("html").removeClass("panel-closed");
-      chatEntry.focus(); // focus so the user can type in it
+      chatEntry
+        .attr("placeholder", "typing in " + (mode == 1 ? "public" : "team") + " chat...")
+        .focus(); // focus so the user can type in it
       $(".message").resetFadeOut();
     }
+
     function PANEL_CLOSE() {
       panelIsOpen = false;
       $("html").addClass("panel-closed");

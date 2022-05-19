@@ -1,3 +1,5 @@
+include("bonchat/vgui/dhtml.lua")
+
 local function fixDimensions(w, h)
   -- consider frame space
   w = w + 10
@@ -32,7 +34,7 @@ local PANEL = {
       surface.DrawRect(0, 0, w, 25)
     end
 
-    self.dhtml = self:Add("DHTML")
+    self.dhtml = self:Add("BonChat_DHTML")
     self.dhtml:Dock(FILL)
 
     --self.dhtml.ConsoleMessage = function() end
@@ -71,9 +73,9 @@ local PANEL = {
     self:SetMinWidth(minW)
     self:SetMinHeight(minH)
     
-    self.dhtml:SetHTML(BonChat.GetResource("image.html"))
+    self.dhtml:SetHTML(BonChat.GetResource("browser_image.html"))
     self.dhtml.OnDocumentReady = function(self)
-      self:Call(string.format("loadImage('%s')", string.JavascriptSafe(url)))
+      self:CallJS("loadImage('%s')", string.JavascriptSafe(url))
     end
 
     self:Show()

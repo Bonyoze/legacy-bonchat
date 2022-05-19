@@ -6,6 +6,10 @@ function BonChat.Log(...)
   MsgN()
 end
 
+function BonChat.LogError(err, reason)
+  BonChat.Log(err, Color(180, 180, 180), reason and (" (" .. reason .. ")") or "")
+end
+
 function BonChat.OpenChat(mode)
   chat.Open(mode)
 end
@@ -23,27 +27,28 @@ function BonChat.ReloadChat()
 end
 
 function BonChat.ClearChat()
-  BonChat.frame:CallJS("chatbox.html('')")
+  BonChat.frame.chatbox:CallJS("chatbox.html('')")
 end
 
 function BonChat.Say(text, mode)
   if not text or #text == 0 then return end
+  RunConsoleCommand((mode and mode == 1 or BonChat.chatMode == 1) and "say" or "say_team", text)
+end
 
-  net.Start("BonChat_say")
-    net.WriteString(string.Left(text, BonChat.GetMsgMaxLen()))
-    net.WriteBool(mode and mode ~= 1 or BonChat.chatMode ~= 1)
-  net.SendToServer()
+function BonChat.InsertText(text)
+  BonChat.frame.chatbox:CallJS("chatEntry.focus(); document.execCommand('insertText', false, '%s');", text)
 end
 
 function BonChat.OpenURL(url)
   if not url or #url == 0 then return end
 
   if not (string.StartWith(url, "https://") or string.StartWith(url, "http://")) then
-    return BonChat.Log("Cannot open a URL unless it's using the protocol 'https' or 'http'!")
+    return BonChat.LogError("Cannot open a URL unless it's using the protocol 'https' or 'http'!")
   end
   if #url > 512 then
-    return BonChat.Log("Cannot open a URL more than 512 characters long!", Color(180, 180, 180), " (https://github.com/Facepunch/garrysmod-issues/issues/4663)")
+    return BonChat.LogError("Cannot open a URL more than 512 characters long!", "https://github.com/Facepunch/garrysmod-issues/issues/4663")
   end
+
   BonChat.CloseChat()
   gui.OpenURL(url)
 end
@@ -163,19 +168,6 @@ panelMeta.DrawBlur = function(self, layers, density, alpha)
     surface.DrawTexturedRect(-self:GetX(), -self:GetY(), ScrW(), ScrH())
   end
 end
-
--- receive player messages sent using the chatbox
-net.Receive("BonChat_Say", function()
-  local ply = net.ReadEntity()
-  local text = net.ReadString()
-  local team = net.ReadBool()
-  hook.Run("OnPlayerChat",
-    ply,
-    text,
-    team,
-    IsValid(ply) and not ply:Alive() or false
-  )
-end)
 
 -- concommands
 

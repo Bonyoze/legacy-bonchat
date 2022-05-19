@@ -1,9 +1,11 @@
+include("bonchat/vgui/dhtml.lua")
+
 local PANEL = {
   Init = function(self)
     self:Dock(FILL)
     self:SetHTML(BonChat.GetResource("chatbox.html"))
 
-    self:AddFunction("glua", "showProfile", function(steamID)
+    self:AddFunc("showProfile", function(steamID)
       local ply = player.GetBySteamID(steamID)
       if ply then
         -- this function allows us to open the profile without having to ask first
@@ -13,17 +15,22 @@ local PANEL = {
         gui.OpenURL("https://steamcommunity.com/id/" .. util.SteamIDTo64(steamID))
       end
     end)
-    self:AddFunction("glua", "say", BonChat.Say)
-    self:AddFunction("glua", "openPage", BonChat.OpenPage)
-    self:AddFunction("glua", "openImage", BonChat.OpenImage)
-    self:AddFunction("glua", "setClipboardText", SetClipboardText)
+    self:AddFunc("say", BonChat.Say)
+    self:AddFunc("openPage", BonChat.OpenPage)
+    self:AddFunc("openImage", BonChat.OpenImage)
+    self:AddFunc("setClipboardText", SetClipboardText)
     
-    -- get emoji data and send to panel
-    self:Call(string.format(
-      "const EMOJI_DATA = JSON.parse('%s')",
-      BonChat.GetResource("emoji_data.json")
-    ))
+    -- create emoji lookup table and send to panel
+    local emojiData, emojiLookup = util.JSONToTable(BonChat.GetResource("emoji_data.json")), {}
+
+    for _, v in pairs(emojiData) do
+      for i = 1, #v, 2 do
+        emojiData[v[i]] = v[i + 1]
+      end
+    end
+
+    self:CallJS("EMOJI_DATA = JSON.parse('%s')", util.TableToJSON(emojiData))
   end
 }
 
-vgui.Register("BonChat_Chatbox", PANEL, "DHTML")
+vgui.Register("BonChat_Chatbox", PANEL, "BonChat_DHTML")

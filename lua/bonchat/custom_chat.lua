@@ -1,5 +1,5 @@
--- this script adds custom game messages to BonChat
--- (connecting, joining, leaving, name change, cvar change, achievement get, player chat)
+-- custom game messages for BonChat (connecting, joining, leaving, name change, cvar change, achievement get, player chat)
+-- you can remove or modify this script to your liking
 
 if SERVER then
   util.AddNetworkString("BonChat_ConnectDisconnect")
