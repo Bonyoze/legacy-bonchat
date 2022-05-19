@@ -260,7 +260,6 @@ local PANEL = {
       -- start search
       self:QuerySearch(string.gsub(self.lastQuery, "[%s:]", ""), self.pageNum + 1, function(result)
         if clear then self:ClearPages() end
-        print(#result)
         self:AppendPage(result, #result < 100)
       end)
     end
