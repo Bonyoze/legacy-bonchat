@@ -40,7 +40,7 @@ local msgArgTypes = BonChat.msgArgTypes
 
 local PANEL = {
   Init = function(self)
-    self:SetSize(ScrW() * 0.3, ScrH() * 0.3)
+    self:SetSize(ScrW() * 0.3, ScrH() * 0.35)
     self:SetPos(ScrW() * 0.02, ScrH() * 0.8 - self:GetTall())
     self:SetMinWidth(self:GetWide())
     self:SetMinHeight(self:GetTall())
