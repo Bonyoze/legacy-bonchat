@@ -36,13 +36,13 @@ function BonChat.Say(text, mode)
 end
 
 function BonChat.InsertText(text)
-  BonChat.frame.chatbox:CallJS("chatEntry.focus(); document.execCommand('insertText', false, '%s');", text)
+  BonChat.frame.chatbox:CallJS("chatEntry.focus(); insertText('%s');", text)
 end
 
 function BonChat.OpenURL(url)
   if not url or #url == 0 then return end
 
-  if not (string.StartWith(url, "https://") or string.StartWith(url, "http://")) then
+  if not string.match(url, "^https?://") then
     return BonChat.LogError("Cannot open a URL unless it's using the protocol 'https' or 'http'!")
   end
   if #url > 512 then

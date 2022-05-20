@@ -72,8 +72,9 @@ local PANEL = {
     self:SetPos(ScrW() / 2 - w / 2, ScrH() / 2 - h / 2)
     self:SetMinWidth(minW)
     self:SetMinHeight(minH)
-    
+
     self.dhtml:SetHTML(BonChat.GetResource("browser_image.html"))
+
     self.dhtml.OnDocumentReady = function(self)
       self:CallJS("loadImage('%s')", string.JavascriptSafe(url))
     end

@@ -803,29 +803,41 @@ return [[<html>
         })
         .attr("src", src);
     }
-    
+
+    function getUTF8ByteLength(str) {
+      var m = encodeURIComponent(str).match(/%[89ABab]/g);
+      return str.length + (m ? m.length : 0);
+    }
+
+    // get clean text from entry
+    function getText() {
+      return chatEntry.text().replace(/\u00A0/g, " "); // converts nbsp characters to spaces
+    }
+
+    // append text into the entry safely
+    function insertText(text) {
+      text = text
+        .replace(/[\u000a\u000d\u2028\u2029\u0009]/g, "") // prevent new lines and tab spaces
+        .substring(0, msgMaxLen - getUTF8ByteLength(getText()) + getUTF8ByteLength(document.getSelection().toString())); // make sure it won't exceed the char limit
+      if (text) document.execCommand("insertText", false, text);
+    }
+
     chatButton
       .on("click", function() {
-        glua.say(chatEntry.text());
+        glua.say(getText());
         chatEntry.text("");
       });
 
     chatEntry
       .on("keypress", function(e) {
-        // prevent newlines and exceeding the char limit
-        return e.which != 13 && !e.ctrlKey && !e.metaKey && !e.altKey && e.which != 8 && chatEntry.text().length < msgMaxLen;
+        // prevent registering certain keys and exceeding the char limit
+        return !e.ctrlKey && !e.metaKey && !e.altKey && e.which != 8 && e.which != 9 && e.which != 13 && getUTF8ByteLength(getText() + String.fromCharCode(e.which)) < msgMaxLen;
       })
       .on("paste", function(e) {
         // prevent pasting html or newlines into the entry
         e.preventDefault();
         var paste = e.originalEvent.clipboardData.getData("text/plain");
-        if (paste && paste.length) {
-          document.execCommand("insertText", false,
-            paste
-              .replace(/[\r\n]/g, "") // remove newlines
-              .substring(0, msgMaxLen - chatEntry.text().length + document.getSelection().toString().length) // make sure pasting it won't exceed the char limit
-          );
-        }
+        insertText(paste);
       });
 
     $(document)

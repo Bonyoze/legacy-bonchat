@@ -150,7 +150,7 @@ end
 local color_default = Color(151, 211, 255)
 
 function BonChat.SendMessage(msg)
-  BonChat.frame:SendMessage(msg)
+  BonChat.frame.chatbox:SendMessage(msg)
 end
 
 function BonChat.SendDefaultMsg(msg)
