@@ -81,9 +81,9 @@ return [[<html>
         pointer-events: none;
       }
       .category .category-emojis {
-        margin: auto;
-        margin-top: 0.5rem;
-        width: 15rem; /* (1.375 + 0.0625 * 2) * 10 */
+        display: table;
+        margin: 0.5rem auto 0 auto;
+        text-align: center;
       }
 
       .category-emojis .load-button-wrapper {
@@ -116,7 +116,7 @@ return [[<html>
       
       .emoji {
         display: inline-block;
-        margin: 0.0625rem;
+        margin: 0.125rem;
         width: 1.375rem;
         height: 1.375rem;
         cursor: pointer;
@@ -124,7 +124,7 @@ return [[<html>
 
       .invalid-emoji {
         display: inline-block;
-        margin: 0.0625rem;
+        margin: 0.125rem;
         width: 1.375rem;
         height: 1.375rem;
       }
@@ -236,6 +236,8 @@ return [[<html>
               .attr("src", item.src);
           else
             $("<span class='invalid-emoji'>").appendTo(this.CATEGORY_EMOJIS);
+          
+          if ((i + 1) % 10 == 0) this.CATEGORY_EMOJIS.append($("<br>"));
         }
 
         // append load button if more pages can still be loaded
