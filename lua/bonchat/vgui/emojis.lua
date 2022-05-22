@@ -212,7 +212,12 @@ local PANEL = {
 
           self:SetTitle("Steam (" .. steamQueryTotals[query] ..  " results)")
 
-          callback(parsePage(steamQueryCache[query][page], steamQueryTotals[query]))
+          local pageData, queryResult = {}, steamQueryCache[query][page]
+          for i = 1, #queryResult do
+            pageData[i] = queryResult[i] or ""
+          end
+
+          callback(pageData)
         end)()
       end
     end
