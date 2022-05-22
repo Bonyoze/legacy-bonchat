@@ -22,72 +22,56 @@ local PANEL = {
       surface.DrawRect(0, 0, w, 25)
     end
 
-    self.settings = self:Add("BonChat_Settings")
-    self.emojis = self:Add("BonChat_Emojis")
-
-    self.btnSettings = self:Add("DButton")
-    self.btnSettings:SetSize(20, 20)
-    self.btnSettings:SetText("")
-    self.btnSettings:SetPos(self:GetWide() - 24, 3)
-    self.btnSettings:SetImage("icon16/cog.png")
-    self.btnSettings.Paint = function() end
-    self.btnSettings.DoClick = function()
-      if self.settings:IsVisible() then return self.settings:Hide() end
-      self.emojis:Hide()
-      local x, y = self:LocalToScreen()
-      self.settings:SetSize(ScrW() * 0.15, self:GetTall())
-      self.settings:SetPos(x + self:GetWide() + 4, y)
-      self.settings:Show()
-      self.settings:MakePopup()
-    end
-
-    self.btnEmojis = self:Add("DButton")
-    self.btnEmojis:SetSize(20, 20)
-    self.btnEmojis:SetText("")
-    self.btnEmojis:SetPos(self:GetWide() - 44, 3)
-    self.btnEmojis:SetImage("icon16/emoticon_grin.png")
-    self.btnEmojis.Paint = function() end
-    self.btnEmojis.DoClick = function()
-      if self.emojis:IsVisible() then return self.emojis:Hide() end
-      self.settings:Hide()
-      local x, y = self:LocalToScreen()
-      self.emojis:SetSize(ScrW() * 0.15, self:GetTall())
-      self.emojis:SetPos(x + self:GetWide() + 4, y)
-      self.emojis:Show()
-      self.emojis:MakePopup()
-    end
-
     -- DHTML panel used for the actual chatbox
     self.chatbox = self:Add("BonChat_Chatbox")
 
     -- DFrame panel used for opening links in-game
     self.browser = vgui.Create("BonChat_Browser")
 
-    -- fix scale of children on resize
-    self.OnSizeChanged = function(self, w, h)
-      self.settings:SetSize(ScrW() * 0.15, self:GetTall())
-      self.emojis:SetSize(ScrW() * 0.15, self:GetTall())
+    self.subPanels = {}
+    self:AddSubPanel("BonChat_Settings", "cog")
+    self:AddSubPanel("BonChat_Emojis", "emoticon_grin")
+
+    local function updateSubPanels()
+      local scrW, w, h, x, y = ScrW(), self:GetWide(), self:GetTall(), self:GetX(), self:GetY()
+
+      for i = 1, #self.subPanels do
+        local subPanel = self.subPanels[i]
+        subPanel.btn:SetPos(w - i * 20 - 4, 3)
+        subPanel.pnl:SetSize(scrW * 0.15, h)
+        subPanel.pnl:SetPos(x + w + 4, y)
+      end
     end
 
-    hook.Add("Think", self, function()
-      if not self:IsKeyboardInputEnabled() then return end
-
-      -- update position of children
-
-      self.btnSettings:SetPos(self:GetWide() - 24, 3)
-
-      if self.settings:IsVisible() then
-        self.settings:SetPos(self:GetX() + self:GetWide() + 4, self:GetY())
-      end
-
-      self.btnEmojis:SetPos(self:GetWide() - 44, 3)
-
-      if self.emojis:IsVisible() then
-        self.emojis:SetPos(self:GetX() + self:GetWide() + 4, self:GetY())
-      end
-    end)
+    self.OnSizeChanged = updateSubPanels
+    hook.Add("Think", self, updateSubPanels)
 
     self:CloseFrame()
+  end,
+  AddSubPanel = function(self, class, icon)
+    local pnl, btn = self:Add(class), self:Add("DButton")
+    local index = table.insert(self.subPanels, { pnl = pnl, btn = btn })
+
+    pnl:ShowCloseButton(false)
+    pnl:SetDraggable(false)
+
+    btn:SetSize(20, 20)
+    btn:SetText("")
+    btn:SetPos(self:GetWide() - index * 20 - 4, 3)
+    btn:SetImage("icon16/" .. icon .. ".png")
+
+    btn.Paint = function() end
+    btn.DoClick = function()
+      if pnl:IsVisible() then return pnl:Hide() end
+      self:HideAllSubPanels()
+      pnl:Show()
+      pnl:MakePopup()
+    end
+  end,
+  HideAllSubPanels = function(self)
+    for i = 1, #self.subPanels do
+      self.subPanels[i].pnl:Hide()
+    end
   end,
   OpenFrame = function(self)
     -- move the frame to the front and enable input
@@ -97,8 +81,9 @@ local PANEL = {
     self.Paint = self.openPaint
 
     -- show parts
-    self.btnSettings:Show()
-    self.btnEmojis:Show()
+    for i = 1, #self.subPanels do
+      self.subPanels[i].btn:Show()
+    end
 
     self.chatbox:Open()
   end,
@@ -114,10 +99,11 @@ local PANEL = {
     self.Paint = function() end
 
     -- hide parts
-    self.settings:Hide()
-    self.btnSettings:Hide()
-    self.emojis:Hide()
-    self.btnEmojis:Hide()
+    for i = 1, #self.subPanels do
+      local subPanel = self.subPanels[i]
+      subPanel.pnl:Hide()
+      subPanel.btn:Hide()
+    end
     self.browser:Hide()
 
     self.chatbox:Close()

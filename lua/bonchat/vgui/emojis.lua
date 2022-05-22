@@ -20,8 +20,6 @@ end
 local PANEL = {
   Init = function(self)
     self:SetTitle("Emoji Catalog")
-    self:ShowCloseButton(false)
-    self:SetDraggable(false)
 
     self.Paint = function(self, w, h)
       self:DrawBlur(1, 1)
@@ -36,9 +34,11 @@ local PANEL = {
     self.dhtml:AddFunc("searchEmojis", function(query) self:SearchEmojis(query) end)
     self.dhtml:AddFunc("loadPage", function(id) self:LoadPage(id) end)
     self.dhtml:AddFunc("insertText", BonChat.InsertText)
-    self.dhtml:AddFunc("setClipboardText", SetClipboardText)
+    --self.dhtml:AddFunc("setClipboardText", SetClipboardText)
 
     self.dhtml:SetHTML(BonChat.GetResource("emojis.html"))
+
+    self.categories = {}
 
     -- default (twemoji)
     do
@@ -217,7 +217,6 @@ local PANEL = {
       end
     end
   end,
-  categories = {},
   AddCategory = function(self, id, source, parser)
     id = string.lower(id)
 
@@ -228,18 +227,19 @@ local PANEL = {
     objCategory.__tostring = function(self) return "BonChat Emoji Category '" .. self.id .. "'" end
 
     objCategory.pageNum = 0
+    objCategory.lastSearch = CurTime()
 
     function objCategory.SetTitle(self, title)
-      dhtml:CallJS("getCategory('%s').setTitle('%s')", string.JavascriptSafe(self.id), string.JavascriptSafe(title))
+      dhtml:CallJS("categories['%s'].setTitle('%s')", string.JavascriptSafe(self.id), string.JavascriptSafe(title))
     end
 
     function objCategory.AppendPage(self, data, last)
-      dhtml:CallJS("getCategory('%s').appendPage(JSON.parse('%s'), %d)", string.JavascriptSafe(self.id), string.JavascriptSafe(util.TableToJSON(data)), last and 1 or 0)
+      dhtml:CallJS("categories['%s'].appendPage(JSON.parse('%s'), %d)", string.JavascriptSafe(self.id), string.JavascriptSafe(util.TableToJSON(data)), last and 1 or 0)
       self.pageNum = self.pageNum + 1
     end
 
     function objCategory.ClearPages(self)
-      dhtml:CallJS("getCategory('%s').clearPages()", string.JavascriptSafe(self.id))
+      dhtml:CallJS("categories['%s'].clearPages()", string.JavascriptSafe(self.id))
     end
 
     function objCategory.QuerySearch()
@@ -249,16 +249,13 @@ local PANEL = {
       if not self.lastQuery then return end
 
       -- append loading label
-      dhtml:CallJS([[
-        getCategory("%s").CATEGORY_EMOJIS.append(
-          $("<div class='load-button-wrapper'>").append(
-            $("<span class='loading-label'>").text(LOADING_LABEL_TEXT)
-          )
-        );
-      ]], self.id)
+      dhtml:CallJS("categories['%s'].appendLoadBtn(LOADING_LABEL_TEXT, true)", self.id)
       
+      local currSearch = self.lastSearch
+
       -- start search
       self:QuerySearch(string.gsub(self.lastQuery, "[%s:]", ""), self.pageNum + 1, function(result)
+        if self.lastSearch ~= currSearch then return end
         if clear then self:ClearPages() end
         self:AppendPage(result, #result < 100)
       end)
@@ -276,10 +273,9 @@ local PANEL = {
   SearchEmojis = function(self, query)
     query = query or ""
     for k, v in pairs(self.categories) do
-      if query == v.lastQuery then continue end
-
       v.lastQuery = query
       v.pageNum = 0
+      v.lastSearch = CurTime()
       v:ClearPages()
       v:LoadPage(true)
     end

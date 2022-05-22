@@ -15,7 +15,7 @@ return [[<html>
         opacity: 0.9999;
       }
 
-      #search-container {
+      #text-entry {
         position: fixed;
         padding: 4px;
         left: 0;
@@ -24,7 +24,7 @@ return [[<html>
         background: rgba(0,0,0,0.5);
         border-radius: 4px;
       }
-      #search-button {
+      #entry-button {
         float: right;
         margin-left: 2px;
         width: 1.375rem;
@@ -33,15 +33,16 @@ return [[<html>
         -webkit-user-select: none;
         user-select: none;
       }
-      #search-entry {
+      #entry-input {
         resize: none;
         overflow: hidden;
         outline: none;
         color: #fff;
         white-space: nowrap;
       }
-      #search-entry[placeholder]:empty:before {
+      #entry-input[placeholder]:empty:before {
         content: attr(placeholder);
+        cursor: text;
         position: absolute;
         opacity: 0.65;
       }
@@ -82,7 +83,7 @@ return [[<html>
       .category .category-emojis {
         margin: auto;
         margin-top: 0.5rem;
-        width: 15rem; /* (1.375 + 0.125) * 10 */
+        width: 15rem; /* (1.375 + 0.0625 * 2) * 10 */
       }
 
       .category-emojis .load-button-wrapper {
@@ -115,7 +116,7 @@ return [[<html>
       
       .emoji {
         display: inline-block;
-        margin: 0.125rem;
+        margin: 0.0625rem;
         width: 1.375rem;
         height: 1.375rem;
         cursor: pointer;
@@ -123,16 +124,16 @@ return [[<html>
 
       .invalid-emoji {
         display: inline-block;
-        margin: 0.125rem;
+        margin: 0.0625rem;
         width: 1.375rem;
         height: 1.375rem;
       }
     </style>
   </head>
   <body>
-    <div id="search-container">
-      <img id="search-button" src="asset://garrysmod/materials/icon16/zoom.png">
-      <div contenteditable id="search-entry" spellcheck="false" oninput="if(this.innerHTML.trim()==='<br>')this.innerHTML=''"></div>
+    <div id="text-entry">
+      <img id="entry-button" src="asset://garrysmod/materials/icon16/zoom.png">
+      <div contenteditable id="entry-input" spellcheck="false" oninput="if (this.innerHTML.trim() === '<br>') this.innerHTML = ''"></div>
     </div>
     <div id="category-container"></div>
   </body>
@@ -191,15 +192,15 @@ return [[<html>
     };
   </script>
   <script type="text/javascript">
-    const searchButton = $("#search-button"),
-    searchEntry = $("#search-entry"),
+    const entryButton = $("#entry-button"),
+    entryInput = $("#entry-input"),
     categoryContainer = $("#category-container");
 
     const LOAD_BUTTON_TEXT = "Click to view more",
     LOADING_LABEL_TEXT = "Loading emojis...",
     ENTRY_PLACEHOLDER_TEXT = "type something...";
 
-    const queryMaxLen = 128;
+    const entryMaxInput = 128;
 
     var categories = {};
     
@@ -238,57 +239,78 @@ return [[<html>
         }
 
         // append load button if more pages can still be loaded
-        if (last !== 1)
-          $("<div class='load-button-wrapper'>")
-            .append($("<span class='load-button'>").text(LOAD_BUTTON_TEXT))
-            .appendTo(this.CATEGORY_EMOJIS);
+        if (last !== 1) this.appendLoadBtn(LOAD_BUTTON_TEXT);
       };
       this.clearPages = function() {
         this.CATEGORY_EMOJIS.empty()
+      };
+      this.appendLoadBtn = function(text, isLabel) {
+        $("<div class='load-button-wrapper'>")
+          .append($("<span>")
+            .attr("class", isLabel ? "loading-label" : "load-button")
+            .text(text)
+          )
+          .appendTo(this.CATEGORY_EMOJIS);
       };
 
       this.CATEGORY_WRAPPER.data("obj", this);
       categories[id] = this;
     }
 
-    function getCategory(id) {
-      return categories[id];
+    function submitEntry() {
+      glua.searchEmojis(entryInput.text());
+      entryInput // reset entry input
+        .attr("placeholder", ENTRY_PLACEHOLDER_TEXT)
+        .text("")
+        .focus();
     }
 
-    function submitEntry() {
-      glua.searchEmojis(searchEntry.text());
-      searchEntry // reset entry
-        .attr("placeholder", ENTRY_PLACEHOLDER_TEXT)
-        .text("");
+    function getUTF8ByteLength(str) {
+      var s = str.length;
+      for (var i = str.length - 1; i >= 0; i--) {
+        var code = str.charCodeAt(i);
+        if (code > 0x7f && code <= 0x7ff) s++;
+        else if (code > 0x7ff && code <= 0xffff) s += 2;
+        if (code >= 0xdc00 && code <= 0xdfff) i--; // trail surrogate
+      }
+      return s;
+    }
+
+    // get clean text from entry
+    function getText() {
+      return entryInput.text().replace(/\u00A0/g, " "); // converts nbsp characters to spaces
+    }
+
+    // append text into the input safely
+    function insertText(text) {
+      text = text
+        .replace(/[\u000a\u000d\u2028\u2029\u0009]/g, "") // prevent new lines and tab spaces
+        .substring(0, entryMaxInput - getUTF8ByteLength(getText()) + getUTF8ByteLength(document.getSelection().toString())); // make sure it won't exceed the char limit
+      if (text) document.execCommand("insertText", false, text);
     }
   
-    searchButton.on("click", submitEntry);
+    entryButton.on("click", submitEntry);
 
-    searchEntry
+    entryInput
       .attr("placeholder", ENTRY_PLACEHOLDER_TEXT)
       .focus()
+      .on("keydown", function(e) { // prevent default tab functionality
+        if (e.which == 9) e.preventDefault();
+      })
       .on("keypress", function(e) {
-        if (e.which == 13) { // submit on enter
-          submitEntry();
+        if (e.which == 13) {
+          submitEntry(); // submit on enter
           return false;
         }
-        // prevent newlines and exceeding the char limit
-        return !e.ctrlKey && !e.metaKey && !e.altKey && e.which != 8 && searchEntry.text().length < queryMaxLen;
+
+        // prevent registering certain keys and exceeding the char limit
+        return !e.ctrlKey && !e.metaKey && !e.altKey && e.which != 8 && e.which != 9 && getUTF8ByteLength(getText() + String.fromCharCode(e.which)) < entryMaxInput;
       })
       .on("paste", function(e) {
-        // prevent pasting html or newlines into the entry
+        // prevent pasting html or new lines into the entry
         e.preventDefault();
         var paste = e.originalEvent.clipboardData.getData("text/plain");
-        if (paste && paste.length) {
-          document.execCommand("insertText", false,
-            paste
-              .replace(/[\r\n]/g, "") // remove newlines
-              .substring(0, queryMaxLen - searchEntry.text().length + document.getSelection().toString().length) // make sure pasting it won't exceed the char limit
-          );
-        }
-      })
-      .on("focusout", function() {
-        searchEntry.focus(); // regain the focus
+        insertText(paste);
       });
 
     $(document)
@@ -299,13 +321,14 @@ return [[<html>
           elem.remove();
         } else if (elem.hasClass("emoji")) // paste the emoji into the chatbox entry
           glua.insertText(elem.data("shortcode") + " ");
+        
+        entryInput.focus();
       })
       .on("mouseover", function(e) {
         var elem = $(e.target);
-        if (elem.hasClass("emoji")) // show shortcode in entry placeholder
-          searchEntry.attr("placeholder", elem.data("shortcode"));
+        if (elem.hasClass("emoji")) entryInput.attr("placeholder", elem.data("shortcode")); // show shortcode in entry placeholder
       });
 
-    submitEntry(); // initialize
+    glua.searchEmojis(""); // initialize
   </script>
 </html>]]

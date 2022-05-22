@@ -1,6 +1,5 @@
 return [[<html>
   <head>
-    <title>BonChat Chatbox</title>
     <style>
       html {
         font-size: 14px;
@@ -13,12 +12,12 @@ return [[<html>
         font-size: 1rem;
         line-height: 1.375rem;
         text-shadow: 1px 1px 1px #000, 1px 1px 2px #000;
-        opacity: 0.9999; /* i have no idea why, but not fully opaque makes the font render sharper in Awesomium */
+        opacity: 0.9999;
       }
 
       /* hiding when panel is closed */
 
-      .panel-closed #chat-container {
+      .panel-closed #text-entry {
         display: none;
       }
       .panel-closed #chatbox::-webkit-scrollbar-track, .panel-closed #chatbox::-webkit-scrollbar-thumb, .panel-closed #chatbox .message {
@@ -50,7 +49,7 @@ return [[<html>
         border-radius: 4px;
       }
 
-      #chat-container {
+      #text-entry {
         position: fixed;
         padding: 4px;
         left: 0;
@@ -59,7 +58,7 @@ return [[<html>
         background: rgba(0,0,0,0.5);
         border-radius: 4px;
       }
-      #chat-button {
+      #entry-button {
         float: right;
         margin-left: 2px;
         width: 1.375rem;
@@ -68,15 +67,16 @@ return [[<html>
         -webkit-user-select: none;
         user-select: none;
       }
-      #chat-entry {
+      #entry-input {
         resize: none;
         overflow: hidden;
         outline: none;
         color: #fff;
-        white-space: nowrap;
+        white-space: pre;
       }
-      #chat-entry[placeholder]:empty:before {
+      #entry-input[placeholder]:empty:before {
         content: attr(placeholder);
+        cursor: text;
         position: absolute;
         opacity: 0.65;
       }
@@ -188,9 +188,9 @@ return [[<html>
   </head>
   <body>
     <div id="chatbox"></div>
-    <div id="chat-container">
-      <img id="chat-button" src="asset://garrysmod/materials/icon16/tick.png">
-      <div contenteditable id="chat-entry" spellcheck="false" oninput="if(this.innerHTML.trim()==='<br>')this.innerHTML=''"></div>
+    <div id="text-entry">
+      <img id="entry-button" src="asset://garrysmod/materials/icon16/tick.png">
+      <div contenteditable id="entry-input" spellcheck="false" oninput="if (this.innerHTML.trim() === '<br>') this.innerHTML = ''"></div>
     </div>
   </body>
   <script type="text/javascript" src="asset://garrysmod/html/js/thirdparty/jquery.js"></script>
@@ -600,11 +600,11 @@ return [[<html>
   </script>
   <script>
     const chatbox = $("#chatbox"),
-    chatButton = $("#chat-button"),
-    chatEntry = $("#chat-entry");
+    entryInput = $("#entry-input"),
+    entryButton = $("#entry-button");
 
     var panelIsOpen = false,
-    msgMaxLen = 126; // gmod's chat message limit
+    entryMaxInput = 126; // gmod's chat message limit
 
     function getTimestampText(s) { // H:MM AM/PM
       function pad(n) {
@@ -805,33 +805,47 @@ return [[<html>
     }
 
     function getUTF8ByteLength(str) {
-      var m = encodeURIComponent(str).match(/%[89ABab]/g);
-      return str.length + (m ? m.length : 0);
+      var s = str.length;
+      for (var i = str.length - 1; i >= 0; i--) {
+        var code = str.charCodeAt(i);
+        if (code > 0x7f && code <= 0x7ff) s++;
+        else if (code > 0x7ff && code <= 0xffff) s += 2;
+        if (code >= 0xdc00 && code <= 0xdfff) i--; // trail surrogate
+      }
+      return s;
     }
 
     // get clean text from entry
     function getText() {
-      return chatEntry.text().replace(/\u00A0/g, " "); // converts nbsp characters to spaces
+      return entryInput.text().replace(/\u00A0/g, " "); // converts nbsp characters to spaces
     }
 
-    // append text into the entry safely
+    // append text into the input safely
     function insertText(text) {
       text = text
         .replace(/[\u000a\u000d\u2028\u2029\u0009]/g, "") // prevent new lines and tab spaces
-        .substring(0, msgMaxLen - getUTF8ByteLength(getText()) + getUTF8ByteLength(document.getSelection().toString())); // make sure it won't exceed the char limit
+        .substring(0, entryMaxInput - getUTF8ByteLength(getText()) + getUTF8ByteLength(document.getSelection().toString())); // make sure it won't exceed the char limit
       if (text) document.execCommand("insertText", false, text);
     }
 
-    chatButton
+    entryButton
       .on("click", function() {
         glua.say(getText());
-        chatEntry.text("");
+        entryInput
+          .text("")
+          .focus();
       });
 
-    chatEntry
+    entryInput
+      .on("keydown", function(e) { // prevent default tab functionality
+        if (e.which == 9) { // toggle the chat mode on tab
+          e.preventDefault();
+          glua.toggleChatMode();
+        }
+      })
       .on("keypress", function(e) {
         // prevent registering certain keys and exceeding the char limit
-        return !e.ctrlKey && !e.metaKey && !e.altKey && e.which != 8 && e.which != 9 && e.which != 13 && getUTF8ByteLength(getText() + String.fromCharCode(e.which)) < msgMaxLen;
+        return !e.ctrlKey && !e.metaKey && !e.altKey && e.which != 8 && e.which != 13 && getUTF8ByteLength(getText() + String.fromCharCode(e.which)) < entryMaxInput;
       })
       .on("paste", function(e) {
         // prevent pasting html or newlines into the entry
@@ -856,14 +870,16 @@ return [[<html>
             );
           else
             glua.openPage(url);
-        } else if (elem.hasClass("emoji")) // check if clicked on an emoji
-          glua.setClipboardText(elem.attr("alt")); // copy emoji to clipboard
+        } else if (elem.hasClass("emoji")) { // check if clicked on an emoji
+          //entryInput.focus();
+          insertText(elem.attr("alt") + " "); // paste the emoji into the entry
+        }
       });
     
     function PANEL_OPEN(mode) {
       panelIsOpen = true;
       $("html").removeClass("panel-closed");
-      chatEntry
+      entryInput
         .attr("placeholder", "typing in " + (mode == 1 ? "public" : "team") + " chat...")
         .focus(); // focus so the user can type in it
       $(".message").resetFadeOut();
@@ -872,7 +888,7 @@ return [[<html>
     function PANEL_CLOSE() {
       panelIsOpen = false;
       $("html").addClass("panel-closed");
-      chatEntry.text(""); // clear the entry
+      entryInput.text(""); // clear the entry
       scrollToBottom(); // reset scroll
       $(".message").startFadeOut(3000, 10000);
     }

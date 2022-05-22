@@ -8,8 +8,6 @@ surface.CreateFont("BonChatSettings", {
 local PANEL = {
   Init = function(self)
     self:SetTitle("Chat Settings")
-    self:ShowCloseButton(false)
-    self:SetDraggable(false)
 
     self.Paint = function(self, w, h)
       surface.SetDrawColor(30, 30, 30)

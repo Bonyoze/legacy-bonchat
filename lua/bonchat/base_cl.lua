@@ -19,10 +19,7 @@ function BonChat.CloseChat()
 end
 
 function BonChat.ReloadChat()
-  if IsValid(BonChat.frame) then
-    BonChat.CloseChat()
-    BonChat.frame:Remove()
-  end
+  if IsValid(BonChat.frame) then BonChat.frame:Remove() end
   BonChat.frame = vgui.Create("BonChat_Frame")
 end
 
@@ -36,7 +33,7 @@ function BonChat.Say(text, mode)
 end
 
 function BonChat.InsertText(text)
-  BonChat.frame.chatbox:CallJS("chatEntry.focus(); insertText('%s');", text)
+  BonChat.frame.chatbox:CallJS("entryInput.focus(); insertText('%s');", text)
 end
 
 function BonChat.OpenURL(url)
@@ -172,14 +169,15 @@ end
 -- concommands
 
 concommand.Add("bonchat_reload", function()
-  BonChat.CloseChat()
   BonChat.ReloadChat()
+
+  sendInfoMessage(":i:cog: **Chatbox was reloaded**")
+
   if BonChat.enabled then
     BonChat.EnableChat()
   else
     BonChat.DisableChat()
   end
-  sendInfoMessage(":i:cog: **Chatbox was reloaded**")
 end)
 
 concommand.Add("bonchat_clear", function()

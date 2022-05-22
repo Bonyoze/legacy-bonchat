@@ -49,10 +49,13 @@ local PANEL = {
         gui.OpenURL("https://steamcommunity.com/id/" .. util.SteamIDTo64(steamID))
       end
     end)
+    self:AddFunc("toggleChatMode", function()
+      BonChat.chatMode = BonChat.chatMode == 1 and 2 or 1
+      self:CallJS("entryInput.attr('placeholder', 'typing in %s chat...')", BonChat.chatMode == 1 and "public" or "team")
+    end)
     self:AddFunc("say", BonChat.Say)
     self:AddFunc("openPage", BonChat.OpenPage)
     self:AddFunc("openImage", BonChat.OpenImage)
-    self:AddFunc("setClipboardText", SetClipboardText)
 
     self:SetHTML(BonChat.GetResource("chatbox.html"))
     

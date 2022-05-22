@@ -14,5 +14,7 @@ AddCSLuaFile("bonchat/vgui/browser.lua")
 AddCSLuaFile("bonchat/vgui/settings.lua")
 AddCSLuaFile("bonchat/vgui/frame.lua")
 
+resource.AddSingleFile("resource/fonts/bonchat/verdana.ttf")
+
 -- custom game messages for BonChat
 include("bonchat/custom_chat.lua")
