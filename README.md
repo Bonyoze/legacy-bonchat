@@ -48,20 +48,21 @@ Should work on any branch, but intended for usage on `x86-64`
     - ❌ texture
     - ❌ sound file
   - ❌ chatbox input markdown
+  - ➖ modular api
 
 ---
 
-### Sending A Message:
+### Sending A Custom Message in GLua:
 
 ```lua
 local msg = BonChat.Message()
-  msg:ShowTimestamp()
-  msg:AppendEntity(LocalPlayer())
-  msg:AppendText(": **some text** ")
-  msg:AppendColor(color_white)
-  msg:AppendEntity(game.GetWorld())
-  msg:AppendMarkdown(" **some text** ")
-  msg:AppendPlayer("Fake Player", Color(0, 255, 0))
+msg:ShowTimestamp()
+msg:AppendEntity(LocalPlayer())
+msg:AppendText(": **some text** ")
+msg:AppendColor(color_white)
+msg:AppendEntity(game.GetWorld())
+msg:AppendMarkdown(" **some text** ")
+msg:AppendPlayer("Fake Player", Color(0, 255, 0))
 BonChat.SendMessage(msg)
 ```
 
