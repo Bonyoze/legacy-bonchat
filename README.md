@@ -2,8 +2,15 @@
 #### (WIP) A chatbox for Garry's Mod with markdown support, emoji support, ability to show images/videos, and some other stuff
 Should work on any branch, but intended for usage on `x86-64`
 
-![](https://user-images.githubusercontent.com/59924045/164592508-17ddcf46-48eb-4fbc-a8f1-2162b026b4b2.png "Feature showcase")
-![](https://user-images.githubusercontent.com/59924045/164572492-b4132cf9-31b7-4132-9ac2-0aa88af5090b.png "Custom message examples")
+![](https://user-images.githubusercontent.com/59924045/169673128-443d5b49-9913-499d-a5bf-3fdb157df680.png "Showcase of markdown support and emoji catalog")
+
+### Custom event messages:
+
+![](https://user-images.githubusercontent.com/59924045/164572492-b4132cf9-31b7-4132-9ac2-0aa88af5090b.png "Custom event message examples")
+
+### Emoji searching:
+
+![](https://user-images.githubusercontent.com/59924045/169673135-03259537-84a4-4ba0-a42e-7e3936c3994e.png "Results for searching 'face'")
 
 ---
 
@@ -14,26 +21,29 @@ Should work on any branch, but intended for usage on `x86-64`
   - ✅ chatbox
   - ✅ browser
   - ➖ settings
-    - ❌ URL whitelist editing
+    - ➖ URL whitelist editing
     - ❌ max message render height
     - ❌ hiding images/videos
     - ❌ hiding duplicate message (antispam)
-  - ❌ emoji catalog
+  - ✅ emoji catalog
   - ❌ message context popup
 - ➖ message sending
   - ✅ inline markdown support
   - ✅ emoji support
     - ✅ Twemoji
+    - ✅ Silkicon
     - ✅ Steam
     - ✅ Discord
-    - ❓ Twitch (might not be implemented)
   - ➖ attachment embedding
     - ✅ images
     - ➖ videos
     - ➖ audio
     - ❌ links
+  - ❌ game attachments (some might not be implemented due to complexity)
+    - ❌ model
+    - ❌ texture
+    - ❌ sound file
   - ❌ chatbox input markdown
-- ➖ api stuff
 
 ---
 
