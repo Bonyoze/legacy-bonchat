@@ -72,7 +72,7 @@ return [[<html>
         overflow: hidden;
         outline: none;
         color: #fff;
-        white-space: pre;
+        white-space: nowrap;
       }
       #entry-input[placeholder]:empty:before {
         content: attr(placeholder);
@@ -203,6 +203,10 @@ return [[<html>
       "media.discordapp.net",
       // Twitter
       "pbs.twimg.com",
+      // Reddit
+      "i.redd.it",
+      "preview.redd.it",
+      "external-preview.redd.it",
       // Dropbox
       "www.dropbox.com",
       "dl.dropboxusercontent.com",
@@ -791,7 +795,7 @@ return [[<html>
       }
     };
 
-    function checkImageContent(src, success, fail) {
+    /*function checkImageContent(src, success, fail) {
       var img = $("<img>")
         .on("load", function() {
           img.remove();
@@ -802,7 +806,7 @@ return [[<html>
           fail();
         })
         .attr("src", src);
-    }
+    }*/
 
     function getUTF8ByteLength(str) {
       var s = str.length;
