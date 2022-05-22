@@ -21,11 +21,15 @@ Should work on any branch, but intended for usage on `x86-64`
   - ✅ chatbox
   - ✅ browser
   - ➖ settings
-    - ➖ URL whitelist editing
+    - ➖ url whitelist editing
     - ❌ max message render height
     - ❌ hiding images/videos
     - ❌ hiding duplicate message (antispam)
   - ✅ emoji catalog
+    - ✅ emoji searching
+    - ✅ Twemoji
+    - ✅ Silkicon
+    - ✅ Steam
   - ❌ message context popup
 - ➖ message sending
   - ✅ inline markdown support
