@@ -24,6 +24,7 @@ function BonChat.ReloadChat()
 end
 
 function BonChat.ClearChat()
+  if not IsValid(BonChat.frame) then return end
   BonChat.frame.chatbox:CallJS("chatbox.html('')")
 end
 
@@ -187,7 +188,7 @@ end)
 
 -- initializing
 
-hook.Add("Initialize", "BonChat_Initialize", BonChat.InitChat)
+hook.Add("OnGamemodeLoaded", "BonChat_Initialize", BonChat.InitChat)
 
 if GAMEMODE then
   BonChat.InitChat()

@@ -150,6 +150,7 @@ end
 local color_default = Color(151, 211, 255)
 
 function BonChat.SendMessage(msg)
+  if not IsValid(BonChat.frame) then return end
   BonChat.frame.chatbox:SendMessage(msg)
 end
 
