@@ -203,10 +203,6 @@ return [[<html>
       "media.discordapp.net",
       // Twitter
       "pbs.twimg.com",
-      // Reddit
-      "i.redd.it",
-      "preview.redd.it",
-      "external-preview.redd.it",
       // Dropbox
       "www.dropbox.com",
       "dl.dropboxusercontent.com",
@@ -852,10 +848,34 @@ return [[<html>
         return !e.ctrlKey && !e.metaKey && !e.altKey && e.which != 8 && e.which != 13 && getUTF8ByteLength(getText() + String.fromCharCode(e.which)) < entryMaxInput;
       })
       .on("paste", function(e) {
-        // prevent pasting html or newlines into the entry
+        // handle pasting text and images
         e.preventDefault();
-        var paste = e.originalEvent.clipboardData.getData("text/plain");
-        insertText(paste);
+
+        var items = e.originalEvent.clipboardData.items;
+        if (!items) return;
+
+        var foundText, foundImage;
+
+        for (var i = 0; i < items.length; i++) {
+          var item = items[i];
+
+          if (!foundText && item.kind == "string" && item.type.match("^text/plain")) {
+            foundText = true;
+            item.getAsString(insertText);
+          } else if (!foundImage && item.kind == "file" && item.type.match("^image/")) {
+            foundImage = true;
+            var file = item.getAsFile(),
+            reader = new FileReader();
+
+            reader.onloadend = function() { // this only works in Chromium branch due to a bug in the version used by Awesomium
+              var bStr = reader.result; // this will return an empty string if not on Chromium branch
+              if (bStr) glua.pasteImage(btoa(bStr));
+            };
+            reader.readAsBinaryString(file);
+          }
+
+          if (foundText && foundImage) break;
+        }
       });
 
     $(document)

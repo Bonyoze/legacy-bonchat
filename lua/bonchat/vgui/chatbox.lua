@@ -1,5 +1,61 @@
 include("bonchat/vgui/dhtml.lua")
 
+local function showProfile(steamID)
+  local ply = player.GetBySteamID(steamID)
+  if ply then
+    -- this function allows us to open the profile without having to ask first
+    ply:ShowProfile()
+  else
+    -- fallback method if we can't get the player entity
+    gui.OpenURL("https://steamcommunity.com/id/" .. util.SteamIDTo64(steamID))
+  end
+end
+
+local function toggleChatMode()
+  BonChat.chatMode = BonChat.chatMode == 1 and 2 or 1
+  BonChat.frame.chatbox:CallJS("entryInput.attr('placeholder', 'typing in %s chat...')", BonChat.chatMode == 1 and "public" or "team")
+end
+
+local imagePasteCache = {}
+
+local function logFetchError(reason)
+  BonChat.LogError("Failed to load image paste", reason)
+end
+
+local function pasteImage(data)
+  local cachedLink = imagePasteCache[data]
+  if cachedLink then -- check if we already requested this exact base64 data
+    BonChat.InsertText(cachedLink .. " ")
+  else -- upload the image to Imgur and receive a link for it
+    HTTP({
+      url = "https://api.imgur.com/3/image.json?client_id=546c25a59c58ad7",
+      method = "post",
+      type = "application/json",
+      parameters = {
+        image = data,
+        type = "base64"
+      },
+      success = function(code, body)
+        if code == 200 then
+          local result = util.JSONToTable(body)
+          if result.success then
+            local link = result.data.link
+            imagePasteCache[data] = link
+            BonChat.InsertText(link .. " ")
+          else
+            logFetchError("Request was unsuccessful")
+          end
+        else
+          logFetchError(code)
+        end
+      end,
+      failed = function(reason)
+        logFetchError(reason)
+      end,
+    })
+  end
+end
+
 local function parseColorStyle(clr)
   return "rgb("
     .. (isnumber(clr.r) and clr.r % 256 or 255)
@@ -39,20 +95,9 @@ local PANEL = {
   Init = function(self)
     self:Dock(FILL)
 
-    self:AddFunc("showProfile", function(steamID)
-      local ply = player.GetBySteamID(steamID)
-      if ply then
-        -- this function allows us to open the profile without having to ask first
-        ply:ShowProfile()
-      else
-        -- fallback method if we can't get the player entity
-        gui.OpenURL("https://steamcommunity.com/id/" .. util.SteamIDTo64(steamID))
-      end
-    end)
-    self:AddFunc("toggleChatMode", function()
-      BonChat.chatMode = BonChat.chatMode == 1 and 2 or 1
-      self:CallJS("entryInput.attr('placeholder', 'typing in %s chat...')", BonChat.chatMode == 1 and "public" or "team")
-    end)
+    self:AddFunc("showProfile", showProfile)
+    self:AddFunc("toggleChatMode", toggleChatMode)
+    self:AddFunc("pasteImage", pasteImage)
     self:AddFunc("say", BonChat.Say)
     self:AddFunc("openPage", BonChat.OpenPage)
     self:AddFunc("openImage", BonChat.OpenImage)

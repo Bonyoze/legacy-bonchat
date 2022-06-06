@@ -37,7 +37,7 @@ local PANEL = {
     self.dhtml = self:Add("BonChat_DHTML")
     self.dhtml:Dock(FILL)
 
-    --self.dhtml.ConsoleMessage = function() end
+    self.dhtml.ConsoleMessage = function() end
     self.dhtml.OnFocusChanged = function(self, gained)
       if not gained then
         self.OnDocumentReady = function() end
