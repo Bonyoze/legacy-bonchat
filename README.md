@@ -81,3 +81,4 @@ BonChat.SendMessage(msg)
 - [Twemoji](https://twemoji.twitter.com) *(emoji api)*
 - [Steam](https://store.steampowered.com) *(emoji api)*
 - [Discord](https://discord.com) *(emoji api)*
+- [Imgur](https://imgur.com) *(api for image pasting functionality)*
