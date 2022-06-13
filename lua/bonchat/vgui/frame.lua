@@ -5,7 +5,7 @@ include("bonchat/vgui/settings.lua")
 
 local PANEL = {
   Init = function(self)
-    self:SetSize(ScrW() * 0.3, ScrH() * 0.35)
+    self:SetSize(ScrW() * 0.4, ScrH() * 0.31)
     self:SetPos(ScrW() * 0.02, ScrH() * 0.8 - self:GetTall())
     self:SetMinWidth(self:GetWide())
     self:SetMinHeight(self:GetTall())
@@ -29,8 +29,8 @@ local PANEL = {
     self.browser = vgui.Create("BonChat_Browser")
 
     self.subPanels = {}
-    self:AddSubPanel("BonChat_Settings", "cog")
-    self:AddSubPanel("BonChat_Emojis", "emoticon_grin")
+    self.settings = self:AddSubPanel("BonChat_Settings", "cog")
+    self.emojis = self:AddSubPanel("BonChat_Emojis", "emoticon_grin")
 
     local function updateSubPanels()
       local scrW, w, h, x, y = ScrW(), self:GetWide(), self:GetTall(), self:GetX(), self:GetY()
@@ -46,7 +46,24 @@ local PANEL = {
     self.OnSizeChanged = updateSubPanels
     hook.Add("Think", self, updateSubPanels)
 
+    // hover label drawing
+
+    local color_hoverlabel1, color_hoverlabel2 = Color(131, 123, 96), Color(250, 237, 185)
+    
+    hook.Add("DrawOverlay", self, function(self)
+      if not system.HasFocus() or not self:HasHierarchicalFocus() or not self.hoverLabelText then return end
+      local x, y = input.GetCursorPos()
+      surface.SetFont("DermaDefault")
+      local w, h = surface.GetTextSize(self.hoverLabelText)
+      draw.RoundedBox(4, x + 25, y - 5, w + 10, h + 10, color_hoverlabel1)
+      draw.RoundedBox(4, x + 26, y - 4, w + 8, h + 8, color_hoverlabel2)
+      draw.SimpleText(self.hoverLabelText, "DermaDefault", x + 30, y + h / 2, color_black, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+    end)
+
     self:CloseFrame()
+  end,
+  SetHoverLabel = function(self, text)
+    self.hoverLabelText = text
   end,
   AddSubPanel = function(self, class, icon)
     local pnl, btn = self:Add(class), self:Add("DButton")
@@ -54,6 +71,7 @@ local PANEL = {
 
     pnl:ShowCloseButton(false)
     pnl:SetDraggable(false)
+    pnl.OnCursorExited = function(self) BonChat.HideHoverLabel() end
 
     btn:SetSize(20, 20)
     btn:SetText("")
@@ -67,6 +85,8 @@ local PANEL = {
       pnl:Show()
       pnl:MakePopup()
     end
+
+    return pnl
   end,
   HideAllSubPanels = function(self)
     for i = 1, #self.subPanels do
@@ -86,6 +106,8 @@ local PANEL = {
     end
 
     self.chatbox:Open()
+
+    self.isOpen = true
   end,
   CloseFrame = function(self)
     -- stop the chatbox panel from drawing over other panels (like the game menu)
@@ -107,6 +129,11 @@ local PANEL = {
     self.browser:Hide()
 
     self.chatbox:Close()
+
+    -- update is typing status
+    self.chatbox:CallJS("glua.isTyping(false)")
+
+    self.isOpen = false
   end,
   OnRemove = function(self)
     -- cleanup

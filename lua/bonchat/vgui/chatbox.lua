@@ -1,5 +1,38 @@
 include("bonchat/vgui/dhtml.lua")
 
+local function isTyping(bool)
+  if LocalPlayer().bonchatIsTyping == bool then return end -- ignore if didn't change
+  LocalPlayer().bonchatIsTyping = bool
+  net.Start("bonchat_istyping")
+    net.WriteBool(bool)
+  net.SendToServer()
+end
+
+--[[local function toggleChatMode()
+  BonChat.chatMode = BonChat.chatMode == 1 and 2 or 1
+  BonChat.frame.chatbox:CallJS("applyChatMode(%d)", BonChat.chatMode)
+end]]
+
+local function onTabKey(text) -- tries to mimic the tab functionality in the default chatbox
+  local tbl = string.Split(string.Trim(text), " ")
+  local last = string.lower(tbl[#tbl])
+
+  -- try to complete the player name
+  if #last > 0 then
+    for k, v in ipairs(player.GetAll()) do
+      local name = v:Nick()
+      local sub = string.lower(string.sub(name, 1, #last))
+      if sub == last then
+        tbl[#tbl] = name
+      end
+    end
+  end
+
+  -- trick for setting the entry text and moving the caret to the end
+  BonChat.SetText("")
+  BonChat.InsertText(table.concat(tbl, " "))
+end
+
 local function showProfile(steamID)
   local ply = player.GetBySteamID(steamID)
   if ply then
@@ -9,11 +42,6 @@ local function showProfile(steamID)
     -- fallback method if we can't get the player entity
     gui.OpenURL("https://steamcommunity.com/id/" .. util.SteamIDTo64(steamID))
   end
-end
-
-local function toggleChatMode()
-  BonChat.chatMode = BonChat.chatMode == 1 and 2 or 1
-  BonChat.frame.chatbox:CallJS("entryInput.attr('placeholder', 'typing in %s chat...')", BonChat.chatMode == 1 and "public" or "team")
 end
 
 local imagePasteCache = {}
@@ -95,14 +123,20 @@ local PANEL = {
   Init = function(self)
     self:Dock(FILL)
 
+    self:AddFunc("playSound", surface.PlaySound)
+    self:AddFunc("isTyping", isTyping)
+    self:AddFunc("onTabKey", onTabKey)
     self:AddFunc("showProfile", showProfile)
-    self:AddFunc("toggleChatMode", toggleChatMode)
     self:AddFunc("pasteImage", pasteImage)
+    self:AddFunc("showHoverLabel", BonChat.ShowHoverLabel)
+    self:AddFunc("hideHoverLabel", BonChat.HideHoverLabel)
     self:AddFunc("say", BonChat.Say)
     self:AddFunc("openPage", BonChat.OpenPage)
     self:AddFunc("openImage", BonChat.OpenImage)
 
     self:SetHTML(BonChat.GetResource("chatbox.html"))
+
+    self.OnCursorExited = function(self) BonChat.HideHoverLabel() end
     
     -- create emoji lookup table and send to panel
     local emojiData, emojiLookup = util.JSONToTable(BonChat.GetResource("emoji_data.json")), {}
@@ -115,12 +149,14 @@ local PANEL = {
 
     self:CallJS("EMOJI_DATA = JSON.parse('%s')", util.TableToJSON(emojiData))
 
-    -- listen for enter and escape key
-
     local lastEnter = false
     local lastEscape = false
 
+    local lastCheckTime = 0
+
     hook.Add("Think", self, function()
+      -- listen for enter and escape key
+
       local enter = input.IsKeyDown(KEY_ENTER)
       local escape = input.IsKeyDown(KEY_ESCAPE)
 
@@ -134,9 +170,21 @@ local PANEL = {
 
       lastEnter = enter
       lastEscape = escape
+
+      -- try to send the next message in the queue
+      self:CheckMessageQueue()
     end)
+
+    self.messageQueue = {}
   end,
   SendMessage = function(self, msg)
+    -- messages are sent in seperate frames to not freeze up the chatbox
+    table.insert(self.messageQueue, msg)
+  end,
+  CheckMessageQueue = function(self)
+    if #self.messageQueue == 0 then return end
+    local msg = table.remove(self.messageQueue, 1) -- get the next message in the queue
+
     self:ReadyJS()
 
     -- create a new message object
@@ -208,6 +256,9 @@ local PANEL = {
   end,
   Close = function(self)
     self:CallJS("PANEL_CLOSE()")
+  end,
+  UpdateConVar = function(self, name, val)
+    self:CallJS("updateConVar('%s', %d)", string.JavascriptSafe(name), val)
   end
 }
 

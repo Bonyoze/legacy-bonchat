@@ -21,11 +21,12 @@ end
 function BonChat.ReloadChat()
   if IsValid(BonChat.frame) then BonChat.frame:Remove() end
   BonChat.frame = vgui.Create("BonChat_Frame")
+  BonChat.UpdateAllChatboxConVars() -- initialize convar values
 end
 
 function BonChat.ClearChat()
   if not IsValid(BonChat.frame) then return end
-  BonChat.frame.chatbox:CallJS("chatbox.html('')")
+  BonChat.frame.chatbox:CallJS("msgContainer.empty(); loadButton.parent().hide();")
 end
 
 function BonChat.Say(text, mode)
@@ -33,8 +34,20 @@ function BonChat.Say(text, mode)
   RunConsoleCommand((mode and mode == 1 or BonChat.chatMode == 1) and "say" or "say_team", text)
 end
 
+function BonChat.ShowHoverLabel(text)
+  BonChat.frame:SetHoverLabel(text)
+end
+
+function BonChat.HideHoverLabel()
+  BonChat.frame:SetHoverLabel(nil)
+end
+
+function BonChat.SetText(text)
+  BonChat.frame.chatbox:CallJS("entryInput.text('%s')", string.JavascriptSafe(text))
+end
+
 function BonChat.InsertText(text)
-  BonChat.frame.chatbox:CallJS("entryInput.focus(); insertText('%s');", text)
+  BonChat.frame.chatbox:CallJS("entryInput.focus(); insertText('%s');", string.JavascriptSafe(text))
 end
 
 function BonChat.OpenURL(url)
@@ -90,6 +103,26 @@ local function openChat(_, bind, pressed)
   end
 end
 
+local function chatTick(ply)
+  if BonChat.GetChatTick() and ply ~= LocalPlayer() then
+    chat.PlaySound()
+  end
+end
+
+function BonChat.EnableChat()
+  hook.Add("HUDShouldDraw", "BonChat_HideDefaultChat", hideDefaultChat)
+  hook.Add("PlayerBindPress", "BonChat_OpenChat", openChat)
+  hook.Add("OnPlayerChat", "BonChat_ChatTick", chatTick)
+  BonChat.frame.chatbox:Show()
+end
+
+function BonChat.DisableChat()
+  hook.Remove("HUDShouldDraw", "BonChat_HideDefaultChat")
+  hook.Remove("PlayerBindPress", "BonChat_OpenChat")
+  hook.Remove("OnPlayerChat", "BonChat_ChatTick")
+  BonChat.frame.chatbox:Hide()
+end
+
 function BonChat.InitChat()
   BonChat.ReloadChat()
 
@@ -100,18 +133,6 @@ function BonChat.InitChat()
   else
     BonChat.DisableChat()
   end
-end
-
-function BonChat.EnableChat()
-  hook.Add("HUDShouldDraw", "BonChat_HideDefaultChat", hideDefaultChat)
-  hook.Add("PlayerBindPress", "BonChat_OpenChat", openChat)
-  BonChat.frame.chatbox:Show()
-end
-
-function BonChat.DisableChat()
-  hook.Remove("HUDShouldDraw", "BonChat_HideDefaultChat")
-  hook.Remove("PlayerBindPress", "BonChat_OpenChat")
-  BonChat.frame.chatbox:Hide()
 end
 
 local suppressDefault = false
@@ -137,7 +158,7 @@ end
 
 BonChat.oldChatOpen = BonChat.oldChatOpen or chat.Open
 function chat.Open(mode, ...)
-  if BonChat.enabled and IsValid(BonChat.frame) then
+  if BonChat.enabled and IsValid(BonChat.frame) and not BonChat.frame.isOpen then
     BonChat.chatMode = mode
     BonChat.frame:OpenFrame()
   end
@@ -146,7 +167,7 @@ end
 
 BonChat.oldChatClose = BonChat.oldChatClose or chat.Close
 function chat.Close(...)
-  if BonChat.enabled and IsValid(BonChat.frame) then BonChat.frame:CloseFrame() end
+  if BonChat.enabled and IsValid(BonChat.frame) and BonChat.frame.isOpen then BonChat.frame:CloseFrame() end
   BonChat.oldChatClose(...)
 end
 
@@ -170,6 +191,7 @@ end
 -- concommands
 
 concommand.Add("bonchat_reload", function()
+  BonChat.CloseChat()
   BonChat.ReloadChat()
 
   sendInfoMessage(":i:cog: **Chatbox was reloaded**")
@@ -182,8 +204,16 @@ concommand.Add("bonchat_reload", function()
 end)
 
 concommand.Add("bonchat_clear", function()
+  BonChat.frame.chatbox.messageQueue = {}
   BonChat.ClearChat()
   sendInfoMessage(":i:bin: **Chatbox was cleared**")
+end)
+
+-- player is typing net message
+
+net.Receive("bonchat_istyping", function()
+  local ply, typing = net.ReadEntity(), net.ReadBool()
+  ply.bonchatIsTyping = typing
 end)
 
 -- initializing

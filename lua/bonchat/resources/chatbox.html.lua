@@ -1,5 +1,6 @@
 return [[<html>
   <head>
+    <meta charset="utf-8">
     <style>
       html {
         font-size: 14px;
@@ -36,6 +37,8 @@ return [[<html>
         padding-right: 2px;
         overflow-x: hidden;
         overflow-y: scroll;
+        -webkit-user-select: none;
+        user-select: none;
       }
       #chatbox::-webkit-scrollbar {
         width: 8px;
@@ -47,6 +50,22 @@ return [[<html>
       #chatbox::-webkit-scrollbar-thumb {
         background: rgb(30,30,30);
         border-radius: 4px;
+      }
+      #load-button-wrapper {
+        margin: 2px 0 4px 0;
+        width: 100%;
+        text-align: center;
+      }
+      #load-button {
+        padding: 4px;
+        color: #fff;
+        font-size: 0.8rem;
+        font-weight: bold;
+        background-color: rgba(0,0,0,0.5);
+        border-radius: 4px;
+        margin: 0 auto;
+        text-align: center;
+        cursor: pointer;
       }
 
       #text-entry {
@@ -98,11 +117,14 @@ return [[<html>
         cursor: pointer;
       }
 
-      .message {
+      div.message {
         padding: 4px;
         white-space: pre-wrap;
         word-wrap: break-word;
         overflow: hidden;
+        -webkit-user-select: text;
+        user-select: text;
+        pointer-events: all;
       }
       .message:first-child {
         border-top-left-radius: 4px;
@@ -113,13 +135,13 @@ return [[<html>
         border-bottom-right-radius: 4px;
       }
       .message:nth-child(odd) {
-        background: rgba(0,0,0,0.5);
+        background: rgba(0,0,0,0.35);
       }
       .message:nth-child(even) {
-        background: rgba(30,30,30,0.5);
+        background: rgba(50,50,50,0.35);
       }
       .message:hover {
-        background: rgba(0,0,0,0.25);
+        background: rgba(0,0,0,0.1);
       }
 
       .message-content *, .message-attachments * {
@@ -145,6 +167,32 @@ return [[<html>
         pointer-events: none;
       }
 
+      .new-divider {
+        overflow: hidden;
+        text-align: center;
+        color: #f00;
+        font-size: 0.8rem;
+        margin-bottom: 4px;
+        pointer-events: none;
+      }
+      .new-divider:before, .new-divider:after {
+        height: 1px;
+        width: 50%;
+        background-color: #f00;
+        display: inline-block;
+        position: relative;
+        vertical-align: middle;
+        content: "";
+      }
+      .new-divider:before {
+        right: 0.5rem;
+        margin-left: -50%;
+      }
+      .new-divider:after {
+        left: 0.5rem;
+        margin-right: -50%;
+      }
+
       /* markdown styling */
 
       .spoiler {
@@ -159,8 +207,10 @@ return [[<html>
         opacity: 1;
       }
 
-      a.link {
+      span.link {
         color: #00aff4;
+        text-decoration: underline;
+        cursor: pointer;
       }
 
       div.attachment {
@@ -187,9 +237,14 @@ return [[<html>
     </style>
   </head>
   <body>
-    <div id="chatbox"></div>
+    <div id="chatbox">
+      <div id="load-button-wrapper" hidden>
+        <span id="load-button"></span>
+      </div>
+      <div id="message-container"></div>
+    </div>
     <div id="text-entry">
-      <img id="entry-button" src="asset://garrysmod/materials/icon16/tick.png">
+      <img id="entry-button">
       <div contenteditable id="entry-input" spellcheck="false" oninput="if (this.innerHTML.trim() === '<br>') this.innerHTML = ''"></div>
     </div>
   </body>
@@ -423,10 +478,10 @@ return [[<html>
         parse: function(capture) {
           return {
             content: capture[1]
-          }
+          };
         },
         html: function(node) {
-          return htmlTag("a", node.content, { class: "link", href: sanitizeURL(node.content) });
+          return htmlTag("span", node.content, { class: "link", href: sanitizeURL(node.content) });
         }
       },
       url: {
@@ -437,7 +492,7 @@ return [[<html>
           };
         },
         html: function(node) {
-          return htmlTag("a", node.content, { class: "link", href: sanitizeURL(node.content) });
+          return htmlTag("span", node.content, { class: "link", href: sanitizeURL(node.content) });
         }
       },
       em: {
@@ -456,7 +511,7 @@ return [[<html>
         parse: function(capture, parse) {
           return {
             content: parse(capture[1])
-          }
+          };
         },
         html: function(node, output) {
           return htmlTag("strong", output(node.content));
@@ -467,7 +522,7 @@ return [[<html>
         parse: function(capture, parse) {
           return {
             content: parse(capture[1])
-          }
+          };
         },
         html: function(node, output) {
           return htmlTag("u", output(node.content));
@@ -485,7 +540,7 @@ return [[<html>
         }
       },
       color: {
-        match: /^(\$([a-z0-9,]+)\$?)/i,
+        match: /^(&([a-z0-9,]+)&)/i,
         parse: function(capture) {
           return {
             originalText: capture[1],
@@ -521,7 +576,7 @@ return [[<html>
         parse: function(capture) {
           return {
             content: capture[0]
-          }
+          };
         },
         html: function(node) {
           return sanitizeText(node.content);
@@ -539,7 +594,7 @@ return [[<html>
         capture = null;
 
         var i = 0;
-        var currRuleType = ruleList[0]
+        var currRuleType = ruleList[0];
         var currRule = rules[currRuleType];
 
         do {
@@ -559,7 +614,7 @@ return [[<html>
         if (rule == null || capture == null) throw new Error("Could not find a matching rule");
         if (capture.index) throw new Error("'match' must return a capture starting at index 0");
 
-        var parsed = rule.parse(capture, nestedParse)
+        var parsed = rule.parse(capture, nestedParse);
 
         if (Array.isArray(parsed)) {
           Array.prototype.push.apply(result, parsed);
@@ -598,13 +653,79 @@ return [[<html>
       }
     }
   </script>
+  <script> // convars script
+    var convars = {};
+
+    const cvarCallbacks = {
+      bonchat_max_messages: function(val) {
+        var msgs = msgContainer.children();
+
+        if (msgs.length > val) {
+          var index = msgs.length - val;
+          msgs.slice(0, index).remove();
+
+          var remaining = msgs.length - index;
+
+          // update message load button
+          if (remaining > 100) {
+            var total = remaining - 100;
+            loadButton
+              .data("msgIndex", total - 1)
+              .text(total + " hidden messages — Click to load" + (total > 100 ? " 100" : ""));
+          } else
+            loadButton.parent().hide();
+        }
+      },
+      bonchat_link_length: function(val) {
+        $(".link").each(function() {
+          var link = $(this),
+          url = link.attr("href");
+          if (url.length > val)
+            link.text(url.slice(0, val) + "...");
+          else
+            link.text(url);
+        });
+      },
+      bonchat_show_images: function(val) {
+        $(".image-attachment").each(val
+          ? function() {
+            $(this).show().data("link").hide();
+          }
+          : function() {
+            $(this).hide().data("link").show();
+          }
+        );
+      }
+    }
+
+    function updateConVar(name, val) {
+      convars[name] = val;
+      applyConVarChanges(name);
+    }
+
+    function applyConVarChanges(name) {
+      var val = convars[name],
+      callback = cvarCallbacks[name];
+      if (val != undefined && callback) {
+        var scrolled = isFullyScrolled();
+        callback(val);
+        if (scrolled) scrollToBottom(); // just in case the height of the chatbox changes
+      }
+    }
+  </script>
   <script>
     const chatbox = $("#chatbox"),
+    loadButton = $("#load-button"),
+    msgContainer = $("#message-container"),
+    entry = $("#text-entry"),
     entryInput = $("#entry-input"),
     entryButton = $("#entry-button");
 
     var panelIsOpen = false,
-    entryMaxInput = 126; // gmod's chat message limit
+    chatMode = 1, // 1 = public
+    entryMaxInput = 126, // gmod's chat message limit
+    firstNewMsg = null,
+    hoverLabelTimeout = null;
 
     function getTimestampText(s) { // H:MM AM/PM
       function pad(n) {
@@ -634,7 +755,7 @@ return [[<html>
     }
 
     jQuery.fn.resetFadeOut = function() {
-      this.css({
+      return this.css({
         "-webkit-transition": "initial",
         "transition": "initial",
         "opacity": "initial"
@@ -643,7 +764,7 @@ return [[<html>
 
     jQuery.fn.startFadeOut = function(duration, delay) {
       var now = Date.now();
-      this.each(function() {
+      return this.each(function() {
         var e = $(this),
           timeSinceSent = now - e.data("sendTime"),
           opac = Math.max((duration - Math.max(timeSinceSent - delay, 0)) / duration, 0);
@@ -662,7 +783,7 @@ return [[<html>
             "opacity": "0"
           });
         }
-      })
+      });
     }
 
     function Message() {
@@ -705,9 +826,19 @@ return [[<html>
         var maxAttachments = this.MAX_ATTACHMENTS,
         attachments = this.MSG_ATTACHMENTS,
         links = this.MSG_WRAPPER.find(".link").slice(0, this.MAX_ATTACHMENTS);
-        
+
+        // apply link length convar
+        links.each(function() {
+          var link = $(this),
+          url = link.attr("href");
+          if (url.length > convars.bonchat_link_length)
+            link.text(url.slice(0, convars.bonchat_link_length) + "...");
+          else
+            link.text(url);
+        });
+
         // keep only whitelisted links and remove duplicates
-        var seen = {}
+        var seen = {};
         links = links.filter(function() {
           var url = $(this).attr("href");
           return url && !seen.hasOwnProperty(url) && isWhitelistedURL(url) ? seen[url] = true : false;
@@ -721,26 +852,31 @@ return [[<html>
           var scrolled = isFullyScrolled();
 
           // try to load the attachment
-          var attachmentContainer = $("<div class='attachment image-attachment'>").appendTo(attachments),
+          var attachment = $("<div class='attachment image-attachment'>"),
           // append first so the order of the attachments doesn't mix up incase they load faster than any before it
           img = $("<img>")
             .on("load", function() { // image loaded
               img.off();
 
-              link.remove();
-              attachments.append(
-                // setup attachment using the loaded image
-                attachmentContainer
-                  .append($("<a>")
-                    .attr("href", url)
-                    .append(img.attr("alt", url))
-                  )
-              );
+              attachment // setup attachment using the loaded image
+                .append($("<span class='link'>")
+                  .attr("href", url)
+                  .append(img.attr("alt", url))
+                )
+                .data("link", link);
+              
+              // apply show images convar
+              if (convars.bonchat_show_images)
+                link.hide();
+              else
+                attachment.hide();
+
+              attachments.append(attachment);
               
               if (scrolled) scrollToBottom();
             })
             .on("error", function() { // failed to load image
-              attachmentContainer.remove()
+              attachment.remove();
               img.remove();
             })
             .attr("src", url);
@@ -777,8 +913,8 @@ return [[<html>
           );
 
         var scrolled = isFullyScrolled();
-        this.MSG_WRAPPER.appendTo(chatbox);
-        if (scrolled) scrollToBottom();
+        this.MSG_WRAPPER.appendTo(msgContainer);
+        if (scrolled || !panelIsOpen) scrollToBottom();
 
         // load attachments
         this._loadAttachments();
@@ -786,8 +922,23 @@ return [[<html>
         // load emojis
         this._loadEmojis();
 
-        // start fade out animation
-        if (!panelIsOpen) this.MSG_WRAPPER.startFadeOut(3000, 10000);
+        if (!panelIsOpen) this.MSG_WRAPPER.startFadeOut(3000, 10000); // start fade out animation
+
+        var msgIndex = this.MSG_WRAPPER.index();
+        if (msgIndex >= 100) {
+          var oldestIndex = msgIndex - 100,
+          oldestMsg = msgContainer.children().eq(oldestIndex);
+          if (oldestMsg.length) {
+            oldestMsg.hide();
+            loadButton
+              .data("msgIndex", oldestIndex)
+              .text((oldestIndex + 1) + " hidden messages — Click to load" + (oldestIndex + 1 > 100 ? " 100" : ""))
+              .parent().show();
+          }
+        }
+
+        // update max messages convar changes
+        applyConVarChanges("bonchat_max_messages");
       }
     };
 
@@ -822,30 +973,64 @@ return [[<html>
 
     // append text into the input safely
     function insertText(text) {
-      text = text
-        .replace(/[\u000a\u000d\u2028\u2029\u0009]/g, "") // prevent new lines and tab spaces
-        .substring(0, entryMaxInput - getUTF8ByteLength(getText()) + getUTF8ByteLength(document.getSelection().toString())); // make sure it won't exceed the char limit
+      text = text.replace(/[\u000a\u000d\u2028\u2029\u0009]/g, ""); // prevent new lines and tab spaces
+      var len = text.length,
+      maxLen = entryMaxInput - getUTF8ByteLength(getText()) + getUTF8ByteLength(document.getSelection().toString());
+      if (len > maxLen) {
+        text = text.substring(0, maxLen); // make sure it won't exceed the char limit
+        glua.playSound("resource/warning.wav");
+      }
       if (text) document.execCommand("insertText", false, text);
     }
 
-    entryButton
-      .on("click", function() {
-        glua.say(getText());
-        entryInput
-          .text("")
-          .focus();
-      });
+    function startHoverLabel(text) {
+      hoverLabelTimeout = setTimeout(function() {
+        glua.showHoverLabel(text);
+      }, 1000);
+    }
+
+    function applyChatMode(mode) {
+      chatMode = mode;
+      entryInput.attr("placeholder", "typing in " + (mode == 1 ? "public" : "team") + " chat...");
+      entryButton.attr("src", "asset://garrysmod/materials/icon16/" + (mode == 1 ? "world" : "group") + "_edit.png");
+    }
+
+    loadButton.on("click", function() {
+      var msgIndex = loadButton.data("msgIndex"),
+      oldestIndex = msgIndex - 100;
+      msgContainer.children().slice(Math.max(oldestIndex + 1, 0), msgIndex + 1).show().resetFadeOut();
+      if (oldestIndex >= 0)
+        loadButton
+          .data("msgIndex", oldestIndex)
+          .text((oldestIndex + 1)  + " hidden messages — Click to load" + (oldestIndex + 1 > 100 ? " 100" : ""));
+      else
+        loadButton.parent().hide();
+    });
+
+    entryButton.on("click", function() {
+      glua.say(getText());
+      entryInput
+        .text("")
+        .focus();
+    });
 
     entryInput
+      .on("focus", function() {
+        glua.isTyping(true);
+      })
       .on("keydown", function(e) { // prevent default tab functionality
         if (e.which == 9) { // toggle the chat mode on tab
           e.preventDefault();
-          glua.toggleChatMode();
+          glua.onTabKey(getText());
         }
       })
       .on("keypress", function(e) {
         // prevent registering certain keys and exceeding the char limit
-        return !e.ctrlKey && !e.metaKey && !e.altKey && e.which != 8 && e.which != 13 && getUTF8ByteLength(getText() + String.fromCharCode(e.which)) < entryMaxInput;
+        if (getUTF8ByteLength(getText() + String.fromCharCode(e.which)) > entryMaxInput) {
+          glua.playSound("resource/warning.wav");
+          return false;
+        }
+        return !e.ctrlKey && !e.metaKey && !e.altKey && e.which != 8 && e.which != 13;
       })
       .on("paste", function(e) {
         // handle pasting text and images
@@ -882,9 +1067,9 @@ return [[<html>
       .on("click", function(e) {
         var elem = $(e.target),
         url = elem.attr("href") || elem.parents().attr("href");
+
         if (url) { // check if clicking would've caused a redirect
-          // prevent page redirect and instead open the image with Glua
-          event.preventDefault();
+          // open the image or page with Glua
           if (elem.is("img"))
             glua.openImage(url,
               elem.prop("naturalWidth"),
@@ -895,26 +1080,65 @@ return [[<html>
           else
             glua.openPage(url);
         } else if (elem.hasClass("emoji")) { // check if clicked on an emoji
-          //entryInput.focus();
+          entryInput.focus();
           insertText(elem.attr("alt") + " "); // paste the emoji into the entry
         }
+
+        // update is typing status
+        glua.isTyping(elem.parent(entry).length > 0); // true if click was inside the text entry
+      })
+      .on("mouseover", function(e) {
+        var elem = $(e.target);
+
+        // show hover label
+        if (elem.is(entryButton)) { // entry button text
+          startHoverLabel("Send a message in " + (chatMode == 1 ? "public" : "team") + " chat");
+        } else if (elem.is(".emoji")) { // emoji text
+          startHoverLabel(elem.attr("alt"));
+        } else if (elem.attr("href") || elem.parents().attr("href")) { // href text
+          startHoverLabel(elem.attr("href") || elem.parents().attr("href"));
+        }
+      })
+      .on("mouseout", function() {
+        // reset hover label
+        clearTimeout(hoverLabelTimeout);
+        glua.hideHoverLabel();
       });
-    
+
     function PANEL_OPEN(mode) {
       panelIsOpen = true;
-      $("html").removeClass("panel-closed");
-      entryInput
-        .attr("placeholder", "typing in " + (mode == 1 ? "public" : "team") + " chat...")
-        .focus(); // focus so the user can type in it
-      $(".message").resetFadeOut();
+      $("html").removeClass("panel-closed"); // unhide the hidden elements
+      applyChatMode(mode);
+
+      var msgs = msgContainer.children();
+
+      msgs.slice(-100).resetFadeOut(); // make last 100 messages visible
+
+      // setup message load button
+      if (msgs.length > 100) {
+        var total = msgs.length - 100;
+        loadButton
+          .data("msgIndex", total - 1)
+          .text(total + " hidden messages — Click to load" + (total > 100 ? " 100" : ""))
+          .parent().show();
+      } else
+        loadButton.parent().hide();
+
+      entryInput.focus(); // focus so the user can type in it
     }
 
     function PANEL_CLOSE() {
       panelIsOpen = false;
-      $("html").addClass("panel-closed");
-      entryInput.text(""); // clear the entry
+      $("html").addClass("panel-closed"); // hide some elements while the panel is closed
+
+      var msgs = msgContainer.children();
+
+      msgs.slice(0, msgs.length - 100).hide(); // hide messages after the last 100
+      msgs.slice(-100).startFadeOut(3000, 10000); // start fading out messages
+
       scrollToBottom(); // reset scroll
-      $(".message").startFadeOut(3000, 10000);
+
+      entryInput.text(""); // clear the entry
     }
   </script>
 </html>]]

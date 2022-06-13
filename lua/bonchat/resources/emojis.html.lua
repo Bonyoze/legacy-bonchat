@@ -90,8 +90,6 @@ return [[<html>
         margin-top: 1rem;
         width: 100%;
         text-align: center;
-        font-size: 0.75rem;
-        font-weight: bold;
       }
       .category-emojis {
         margin: 0.125rem;
@@ -100,6 +98,8 @@ return [[<html>
       .load-button {
         padding: 4px;
         color: #fff;
+        font-size: 0.8rem;
+        font-weight: bold;
         background-color: rgba(0,0,0,0.5);
         border-radius: 4px;
         cursor: pointer;
@@ -109,6 +109,8 @@ return [[<html>
         font-style: italic;
         padding: 4px;
         color: #fff;
+        font-size: 0.8rem;
+        font-weight: bold;
         background-color: rgba(0,0,0,0.5);
         border-radius: 4px;
         cursor: pointer;
@@ -198,7 +200,7 @@ return [[<html>
 
     const LOAD_BUTTON_TEXT = "Click to view more",
     LOADING_LABEL_TEXT = "Loading emojis...",
-    ENTRY_PLACEHOLDER_TEXT = "type something...";
+    ENTRY_PLACEHOLDER_TEXT = "search...";
 
     const entryMaxInput = 128;
 
@@ -260,7 +262,7 @@ return [[<html>
     }
 
     function submitEntry() {
-      glua.searchEmojis(entryInput.text());
+      glua.searchEmojis(getText());
       entryInput // reset entry input
         .attr("placeholder", ENTRY_PLACEHOLDER_TEXT)
         .text("")
@@ -290,7 +292,15 @@ return [[<html>
         .substring(0, entryMaxInput - getUTF8ByteLength(getText()) + getUTF8ByteLength(document.getSelection().toString())); // make sure it won't exceed the char limit
       if (text) document.execCommand("insertText", false, text);
     }
-  
+    
+    var hoverLabelTimeout;
+
+    function startHoverLabel(text) {
+      hoverLabelTimeout = setTimeout(function() {
+        glua.showHoverLabel(text);
+      }, 1000);
+    }
+
     entryButton.on("click", submitEntry);
 
     entryInput
@@ -306,7 +316,7 @@ return [[<html>
         }
 
         // prevent registering certain keys and exceeding the char limit
-        return !e.ctrlKey && !e.metaKey && !e.altKey && e.which != 8 && e.which != 9 && getUTF8ByteLength(getText() + String.fromCharCode(e.which)) < entryMaxInput;
+        return !e.ctrlKey && !e.metaKey && !e.altKey && e.which != 8 && getUTF8ByteLength(getText() + String.fromCharCode(e.which)) < entryMaxInput;
       })
       .on("paste", function(e) {
         // prevent pasting html or new lines into the entry
@@ -328,7 +338,20 @@ return [[<html>
       })
       .on("mouseover", function(e) {
         var elem = $(e.target);
-        if (elem.hasClass("emoji")) entryInput.attr("placeholder", elem.data("shortcode")); // show shortcode in entry placeholder
+
+        // show hover label
+        if (elem.is(entryButton)) { // entry button text
+          startHoverLabel("Search for emojis");
+        } else if (elem.is(".emoji")) { // emoji text
+          var shortcode = elem.data("shortcode")
+          entryInput.attr("placeholder", shortcode); // show shortcode in entry placeholder
+          startHoverLabel(shortcode);
+        }
+      })
+      .on("mouseout", function() {
+        // reset hover label
+        clearTimeout(hoverLabelTimeout);
+        glua.hideHoverLabel();
       });
 
     glua.searchEmojis(""); // initialize

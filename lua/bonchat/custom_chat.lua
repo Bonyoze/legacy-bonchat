@@ -2,12 +2,12 @@
 -- you can remove or modify this script to your liking
 
 if SERVER then
-  util.AddNetworkString("BonChat_ConnectDisconnect")
-  util.AddNetworkString("BonChat_JoinLeave")
+  util.AddNetworkString("bonchat_connectdisconnect")
+  util.AddNetworkString("bonchat_joinleave")
 
   gameevent.Listen("player_connect")
   hook.Add("player_connect", "BonChat_PlayerConnect", function(data)
-    net.Start("BonChat_ConnectDisconnect")
+    net.Start("bonchat_connectdisconnect")
       net.WriteBool(true)
       net.WriteString(data.name)
     net.Broadcast()
@@ -18,7 +18,7 @@ if SERVER then
     timer.Simple(0, function()
       if not IsValid(ply) then return end
       local clr = team.GetColor(ply:Team())
-      net.Start("BonChat_JoinLeave")
+      net.Start("bonchat_joinleave")
         net.WriteBool(true)
         net.WriteBool(ply:IsBot())
         net.WriteString(ply:Nick())
@@ -35,7 +35,7 @@ if SERVER then
     local ply = Player(data.userid)
     if IsValid(ply) then
       local clr = team.GetColor(ply:Team())
-      net.Start("BonChat_JoinLeave")
+      net.Start("bonchat_joinleave")
         net.WriteBool(false)
         net.WriteBool(ply:IsBot())
         net.WriteString(ply:Nick())
@@ -46,7 +46,7 @@ if SERVER then
         net.WriteString(data.reason)
       net.Broadcast()
     else
-      net.Start("BonChat_ConnectDisconnect")
+      net.Start("bonchat_connectdisconnect")
         net.WriteBool(false)
         net.WriteString(data.name)
       net.Broadcast()
@@ -59,7 +59,7 @@ end
 local color_connecting = Color(162, 255, 162)
 
 -- player connecting/disconnecting messages
-net.Receive("BonChat_ConnectDisconnect", function()
+net.Receive("bonchat_connectdisconnect", function()
   local connecting = net.ReadBool()
   local name = net.ReadString()
 
@@ -79,7 +79,7 @@ net.Receive("BonChat_ConnectDisconnect", function()
 end)
 
 -- player join/leave messages
-net.Receive("BonChat_JoinLeave", function()
+net.Receive("bonchat_joinleave", function()
   local joined = net.ReadBool()
   local isBot = net.ReadBool()
   local name = net.ReadString()

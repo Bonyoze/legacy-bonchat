@@ -31,9 +31,11 @@ local PANEL = {
     self.dhtml = self:Add("BonChat_DHTML")
     self.dhtml:Dock(FILL)
 
+    self.dhtml:AddFunc("showHoverLabel", BonChat.ShowHoverLabel)
+    self.dhtml:AddFunc("hideHoverLabel", BonChat.HideHoverLabel)
+    self.dhtml:AddFunc("insertText", BonChat.InsertText)
     self.dhtml:AddFunc("searchEmojis", function(query) self:SearchEmojis(query) end)
     self.dhtml:AddFunc("loadPage", function(id) self:LoadPage(id) end)
-    self.dhtml:AddFunc("insertText", BonChat.InsertText)
     --self.dhtml:AddFunc("setClipboardText", SetClipboardText)
 
     self.dhtml:SetHTML(BonChat.GetResource("emojis.html"))
@@ -77,9 +79,9 @@ local PANEL = {
           if query ~= lastQuery then
             queryResult = {}
 
-            local seen = {}
+            local seen, showTones = {}, BonChat.GetShowToneEmojis()
             for k, v in ipairs(names) do
-              if string.match(v, "_tone%d?") then continue end
+              if not showTones and string.match(v, "_tone%d?") then continue end
               if #query == 0 or string.find(v, query, 1, true) then -- include if query was empty or the name matches
                 local surrogates = data[k * 2]
                 local found = seen[surrogates]

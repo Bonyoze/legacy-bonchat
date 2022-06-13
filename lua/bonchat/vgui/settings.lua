@@ -21,19 +21,51 @@ local PANEL = {
     self.panel:Dock(FILL)
     self.panel:GetVBar():SetWide(0)
 
-    self:AddButton("Reload Chatbox", function()
-      RunConsoleCommand("bonchat_reload")
-    end)
-    self:AddButton("Clear Chat", function()
-      RunConsoleCommand("bonchat_clear")
-    end)
+    -- reload chatbox button
+    self:AddButton("Reload Chatbox", function() RunConsoleCommand("bonchat_reload") end)
+    -- clear chat button
+    self:AddButton("Clear Chat", function() RunConsoleCommand("bonchat_clear") end)
+    -- max msgs slider
+    local cvarMaxMsgs = GetConVar(BonChat.CVAR.MAX_MSGS)
+    self:AddSlider("Max Messages", BonChat.CVAR.MAX_MSGS, cvarMaxMsgs:GetInt(), cvarMaxMsgs:GetMin(), cvarMaxMsgs:GetMax(), 0)
+    -- link length slider
+    local cvarLinkLen = GetConVar(BonChat.CVAR.LINK_LEN)
+    self:AddSlider("Max Link Length", BonChat.CVAR.LINK_LEN, cvarLinkLen:GetInt(), cvarLinkLen:GetMin(), cvarLinkLen:GetMax(), 0)
+    -- chat tick toggle
+    self:AddCheckbox("Play chat sound", BonChat.CVAR.CHAT_TICK, BonChat.GetChatTick())
+    -- image embeds toggle
+    self:AddCheckbox("Show image attachments", BonChat.CVAR.SHOW_IMGS, BonChat.GetShowImages())
+    -- skin tone emojis toggle
+    self:AddCheckbox("Show results for skin tone emojis", BonChat.CVAR.SHOW_TONE_EMOJIS, BonChat.GetShowToneEmojis())
   end,
-  AddButton = function(self, text, callback)
-    local btn = self.panel:Add("DButton")
+  AddElement = function(self, class)
+    local elem = self.panel:Add(class)
+    elem:Dock(TOP)
+    elem:DockMargin(5, 0, 5, 5)
+    return elem
+  end,
+  AddButton = function(self, text, doClick)
+    local btn = self:AddElement("DButton")
     btn:SetText(text)
-    btn:Dock(TOP)
-    btn:DockMargin(20, 0, 20, 0)
-    btn.DoClick = callback
+    btn.DoClick = doClick
+    return btn
+  end,
+  AddSlider = function(self, text, cvar, default, min, max, decimals)
+    local slider = self:AddElement("DNumSlider")
+    slider:SetText(text)
+    slider:SetConVar(cvar)
+    slider:SetDefaultValue(default)
+    slider:SetMin(min)
+    slider:SetMax(max)
+    slider:SetDecimals(decimals)
+    return slider
+  end,
+  AddCheckbox = function(self, text, cvar, default)
+    local checkbox = self:AddElement("DCheckBoxLabel")
+    checkbox:SetText(text)
+    checkbox:SetConVar(cvar)
+    checkbox:SetValue(default)
+    return checkbox
   end
 }
 
