@@ -43,11 +43,11 @@ function BonChat.HideHoverLabel()
 end
 
 function BonChat.SetText(text)
-  BonChat.frame.chatbox:CallJS("entryInput.text('%s')", string.JavascriptSafe(text))
+  BonChat.frame.chatbox:CallJSParams("entryInput.text('%s')", string.JavascriptSafe(text))
 end
 
 function BonChat.InsertText(text)
-  BonChat.frame.chatbox:CallJS("entryInput.focus(); insertText('%s');", string.JavascriptSafe(text))
+  BonChat.frame.chatbox:CallJSParams("entryInput.focus(); insertText('%s');", string.JavascriptSafe(text))
 end
 
 function BonChat.OpenURL(url)

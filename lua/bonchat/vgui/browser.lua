@@ -76,7 +76,7 @@ local PANEL = {
     self.dhtml:SetHTML(BonChat.GetResource("browser_image.html"))
 
     self.dhtml.OnDocumentReady = function(self)
-      self:CallJS("loadImage('%s')", string.JavascriptSafe(url))
+      self:CallJSParams("loadImage('%s')", string.JavascriptSafe(url))
     end
 
     self:Show()

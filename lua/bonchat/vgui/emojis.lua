@@ -237,16 +237,16 @@ local PANEL = {
     objCategory.lastSearch = CurTime()
 
     function objCategory.SetTitle(self, title)
-      dhtml:CallJS("categories['%s'].setTitle('%s')", string.JavascriptSafe(self.id), string.JavascriptSafe(title))
+      dhtml:CallJSParams("categories['%s'].setTitle('%s')", string.JavascriptSafe(self.id), string.JavascriptSafe(title))
     end
 
     function objCategory.AppendPage(self, data, last)
-      dhtml:CallJS("categories['%s'].appendPage(JSON.parse('%s'), %d)", string.JavascriptSafe(self.id), string.JavascriptSafe(util.TableToJSON(data)), last and 1 or 0)
+      dhtml:CallJSParams("categories['%s'].appendPage(JSON.parse('%s'), %d)", string.JavascriptSafe(self.id), string.JavascriptSafe(util.TableToJSON(data)), last and 1 or 0)
       self.pageNum = self.pageNum + 1
     end
 
     function objCategory.ClearPages(self)
-      dhtml:CallJS("categories['%s'].clearPages()", string.JavascriptSafe(self.id))
+      dhtml:CallJSParams("categories['%s'].clearPages()", string.JavascriptSafe(self.id))
     end
 
     function objCategory.QuerySearch()
@@ -256,7 +256,7 @@ local PANEL = {
       if not self.lastQuery then return end
 
       -- append loading label
-      dhtml:CallJS("categories['%s'].appendLoadBtn(LOADING_LABEL_TEXT, true)", self.id)
+      dhtml:CallJSParams("categories['%s'].appendLoadBtn(LOADING_LABEL_TEXT, true)", self.id)
       
       local currSearch = self.lastSearch
 
@@ -269,7 +269,7 @@ local PANEL = {
     end
 
     -- add category
-    dhtml:CallJS("new Category('%s', '%s', '%s')", string.JavascriptSafe(id), source and string.JavascriptSafe(source) or "", parser and string.JavascriptSafe(parser) or "")
+    dhtml:CallJSParams("new Category('%s', '%s', '%s')", string.JavascriptSafe(id), source and string.JavascriptSafe(source) or "", parser and string.JavascriptSafe(parser) or "")
 
     local obj = setmetatable({ id = id }, objCategory)
 

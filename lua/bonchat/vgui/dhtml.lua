@@ -2,7 +2,10 @@ local PANEL = {
   Init = function(self)
     self.jsStr = ""
   end,
-  CallJS = function(self, str, ...)
+  CallJS = function(self, str)
+    self:Call("(function() {" .. str .. "})()")
+  end,
+  CallJSParams = function(self, str, ...)
     self:Call("(function() {" .. string.format(str, ...) .. "})()")
   end,
   ReadyJS = function(self)

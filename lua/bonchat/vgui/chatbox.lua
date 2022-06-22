@@ -147,7 +147,7 @@ local PANEL = {
       end
     end
 
-    self:CallJS("EMOJI_DATA = JSON.parse('%s')", util.TableToJSON(emojiData))
+    self:CallJSParams("EMOJI_DATA = JSON.parse('%s')", util.TableToJSON(emojiData))
 
     local lastEnter = false
     local lastEscape = false
@@ -252,13 +252,13 @@ local PANEL = {
   Open = function(self)
     -- need to request focus so the client can type
     self:RequestFocus()
-    self:CallJS("PANEL_OPEN(%d)", BonChat.chatMode)
+    self:CallJSParams("PANEL_OPEN(%d)", BonChat.chatMode)
   end,
   Close = function(self)
     self:CallJS("PANEL_CLOSE()")
   end,
   UpdateConVar = function(self, name, val)
-    self:CallJS("updateConVar('%s', %d)", string.JavascriptSafe(name), val)
+    self:CallJSParams("updateConVar('%s', %d)", string.JavascriptSafe(name), val)
   end
 }
 
