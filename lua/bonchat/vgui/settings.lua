@@ -32,11 +32,11 @@ local PANEL = {
     local cvarLinkLen = GetConVar(BonChat.CVAR.LINK_LEN)
     self:AddSlider("Max Link Length", BonChat.CVAR.LINK_LEN, cvarLinkLen:GetInt(), cvarLinkLen:GetMin(), cvarLinkLen:GetMax(), 0)
     -- chat tick toggle
-    self:AddCheckbox("Play chat sound", BonChat.CVAR.CHAT_TICK, BonChat.GetChatTick())
+    self:AddCheckbox("Play chat sound", BonChat.CVAR.CHAT_TICK, BonChat.CVAR.GetChatTick())
     -- image embeds toggle
-    self:AddCheckbox("Show image attachments", BonChat.CVAR.SHOW_IMGS, BonChat.GetShowImages())
+    self:AddCheckbox("Show image attachments", BonChat.CVAR.SHOW_IMGS, BonChat.CVAR.GetShowImages())
     -- skin tone emojis toggle
-    self:AddCheckbox("Show results for skin tone emojis", BonChat.CVAR.SHOW_TONE_EMOJIS, BonChat.GetShowToneEmojis())
+    self:AddCheckbox("Show results for skin tone emojis", BonChat.CVAR.SHOW_TONE_EMOJIS, BonChat.CVAR.GetShowToneEmojis())
   end,
   AddElement = function(self, class)
     local elem = self.panel:Add(class)

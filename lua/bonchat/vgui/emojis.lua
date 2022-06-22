@@ -79,7 +79,7 @@ local PANEL = {
           if query ~= lastQuery then
             queryResult = {}
 
-            local seen, showTones = {}, BonChat.GetShowToneEmojis()
+            local seen, showTones = {}, BonChat.CVAR.GetShowToneEmojis()
             for k, v in ipairs(names) do
               if not showTones and string.match(v, "_tone%d?") then continue end
               if #query == 0 or string.find(v, query, 1, true) then -- include if query was empty or the name matches

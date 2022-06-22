@@ -657,6 +657,9 @@ return [[<html>
     var convars = {};
 
     const cvarCallbacks = {
+      bonchat_msg_max_len: function(val) {
+        entryMaxInput = val;
+      },
       bonchat_max_messages: function(val) {
         var msgs = msgContainer.children();
 
@@ -723,7 +726,7 @@ return [[<html>
 
     var panelIsOpen = false,
     chatMode = 1, // 1 = public
-    entryMaxInput = 126, // gmod's chat message limit
+    entryMaxInput = 0, // set by bonchat_msg_max_len cvar
     firstNewMsg = null,
     hoverLabelTimeout = null;
 

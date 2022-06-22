@@ -31,7 +31,14 @@ end
 
 function BonChat.Say(text, mode)
   if not text or #text == 0 then return end
-  RunConsoleCommand((mode and mode == 1 or BonChat.chatMode == 1) and "say" or "say_team", text)
+
+  local data = util.Compress(string.Left(text, BonChat.CVAR.GetMsgMaxLen()))
+
+  net.Start("bonchat_say")
+    net.WriteUInt(#data, 12)
+    net.WriteData(data, #data)
+    net.WriteBool(mode and mode ~= 1 or BonChat.chatMode ~= 1)
+  net.SendToServer()
 end
 
 function BonChat.ShowHoverLabel(text)
@@ -104,7 +111,7 @@ local function openChat(_, bind, pressed)
 end
 
 local function chatTick(ply)
-  if BonChat.GetChatTick() and ply ~= LocalPlayer() then
+  if BonChat.CVAR.GetChatTick() and ply ~= LocalPlayer() then
     chat.PlaySound()
   end
 end
@@ -209,8 +216,18 @@ concommand.Add("bonchat_clear", function()
   sendInfoMessage(":i:bin: **Chatbox was cleared**")
 end)
 
--- player is typing net message
+-- player sent a message through the chatbox
+net.Receive("bonchat_say", function()
+  local ply = net.ReadEntity()
+  local len = net.ReadUInt(12)
+  local text = util.Decompress(net.ReadData(len), len)
+  local teamChat = net.ReadBool()
+  local isDead = net.ReadBool()
 
+  hook.Run("OnPlayerChat", ply, text, teamChat, isDead)
+end)
+
+-- player is typing in the chatbox
 net.Receive("bonchat_istyping", function()
   local ply, typing = net.ReadEntity(), net.ReadBool()
   ply.bonchatIsTyping = typing
