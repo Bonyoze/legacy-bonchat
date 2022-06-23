@@ -20,10 +20,10 @@ util.AddNetworkString("bonchat_istyping")
 net.Receive("bonchat_say", function(_, ply)
   if ply.bonchatLastMsgTime and CurTime() - ply.bonchatLastMsgTime < BonChat.CVAR.GetMsgCooldown() then return end
 
-  local len = net.ReadUInt(12)
-  local text = string.Left(util.Decompress(net.ReadData(len), len), BonChat.CVAR.GetMsgMaxLen())
+  local text = string.Left(net.ReadString(), BonChat.CVAR.GetMsgMaxLen())
   local teamChat = net.ReadBool()
 
+  if not IsValid(ply) and teamChat then return end
   text = hook.Run("PlayerSay", ply, text, teamChat)
 
   if #text == 0 then return end
@@ -32,15 +32,15 @@ net.Receive("bonchat_say", function(_, ply)
 
   net.Start("bonchat_say")
     net.WriteEntity(ply)
-    net.WriteUInt(#newData, 12)
-    net.WriteData(newData, #newData)
+    net.WriteString(text)
     net.WriteBool(teamChat)
     net.WriteBool(not ply:Alive())
-  if IsValid(ply) and teamChat then
+  if teamChat then
     net.Send(team.GetPlayers(ply:Team()))
   else
     net.Broadcast()
   end
+  
   ply.bonchatLastMsgTime = CurTime()
 end)
 

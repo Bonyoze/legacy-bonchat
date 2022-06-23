@@ -30,15 +30,17 @@ function BonChat.ClearChat()
 end
 
 function BonChat.Say(text, mode)
-  if not text or #text == 0 then return end
+  if BonChat.lastMsgTime and CurTime() - BonChat.lastMsgTime < BonChat.CVAR.GetMsgCooldown() then return end
 
-  local data = util.Compress(string.Left(text, BonChat.CVAR.GetMsgMaxLen()))
+  text = string.Left(text or "", BonChat.CVAR.GetMsgMaxLen())
+  if #text == 0 then return end
 
   net.Start("bonchat_say")
-    net.WriteUInt(#data, 12)
-    net.WriteData(data, #data)
+    net.WriteString(text)
     net.WriteBool(mode and mode ~= 1 or BonChat.chatMode ~= 1)
   net.SendToServer()
+
+  BonChat.lastMsgTime = CurTime()
 end
 
 function BonChat.ShowHoverLabel(text)
@@ -219,8 +221,7 @@ end)
 -- player sent a message through the chatbox
 net.Receive("bonchat_say", function()
   local ply = net.ReadEntity()
-  local len = net.ReadUInt(12)
-  local text = util.Decompress(net.ReadData(len), len)
+  local text = net.ReadString()
   local teamChat = net.ReadBool()
   local isDead = net.ReadBool()
 

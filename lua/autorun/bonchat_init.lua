@@ -17,7 +17,7 @@ BonChat.CVAR.SHOW_IMGS = "bonchat_show_images"
 BonChat.CVAR.SHOW_TONE_EMOJIS = "bonchat_show_tone_emojis"
 
 
-CreateConVar(BonChat.CVAR.MSG_MAX_LEN, 3000, { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED }, "Set the character limit of messages", 256, 3000)
+CreateConVar(BonChat.CVAR.MSG_MAX_LEN, 1000, { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED }, "Set the character limit of messages", 256, 3000)
 CreateConVar(BonChat.CVAR.MSG_COOLDOWN, 0.5, { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED }, "Set the message send cooldown in seconds", 0, 60)
 
 CreateClientConVar(BonChat.CVAR.ENABLED, 1, true, nil, "Enable or disable BonChat")
