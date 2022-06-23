@@ -21,18 +21,19 @@ net.Receive("bonchat_say", function(_, ply)
   if ply.bonchatLastMsgTime and CurTime() - ply.bonchatLastMsgTime < BonChat.CVAR.GetMsgCooldown() then return end
 
   local len = net.ReadUInt(12)
-  local data = net.ReadData(len)
-  local text = string.Left(util.Decompress(data), BonChat.CVAR.GetMsgMaxLen())
+  local text = string.Left(util.Decompress(net.ReadData(len), len), BonChat.CVAR.GetMsgMaxLen())
   local teamChat = net.ReadBool()
 
   text = hook.Run("PlayerSay", ply, text, teamChat)
 
   if #text == 0 then return end
 
+  local newData = util.Compress(text)
+
   net.Start("bonchat_say")
     net.WriteEntity(ply)
-    net.WriteUInt(len, 12)
-    net.WriteData(data)
+    net.WriteUInt(#newData, 12)
+    net.WriteData(newData, #newData)
     net.WriteBool(teamChat)
     net.WriteBool(not ply:Alive())
   if IsValid(ply) and teamChat then
