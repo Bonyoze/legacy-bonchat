@@ -171,20 +171,18 @@ local PANEL = {
       lastEnter = enter
       lastEscape = escape
 
-      -- try to send the next message in the queue
-      self:CheckMessageQueue()
+      -- check if any new messages came in
+      self:UpdateNewMessages()
     end)
 
-    self.messageQueue = {}
+    self.messages = {}
+    self.newMessages = 0
   end,
   SendMessage = function(self, msg)
-    -- messages are sent in seperate frames to not freeze up the chatbox
-    table.insert(self.messageQueue, msg)
+    table.insert(self.messages, 1, msg)
+    self.newMessages = self.newMessage + 1
   end,
-  CheckMessageQueue = function(self)
-    if #self.messageQueue == 0 then return end
-    local msg = table.remove(self.messageQueue, 1) -- get the next message in the queue
-
+  AppendMessage = function(self, msg)
     self:ReadyJS()
 
     -- create a new message object
@@ -219,20 +217,7 @@ local PANEL = {
           isnumber(arg.r) and arg.r % 256 or 255,
           isnumber(arg.g) and arg.g % 256 or 255,
           isnumber(arg.b) and arg.b % 256 or 255
-        );
-      elseif t == msgArgTypes.ENTITY then
-        local ent = arg.value
-        if ent == NULL then
-          self:AddJS("msg.appendText('NULL')")
-        elseif ent:IsPlayer() then
-          self:AddJS("msg.appendPlayer('%s', '%s', '%s')",
-            string.JavascriptSafe(ent:Nick()),
-            parseColorStyle(hook.Run("GetTeamColor", ent)),
-            string.JavascriptSafe(ent:SteamID())
-          )
-        else
-          self:AddJS("msg.appendText('%s')", string.JavascriptSafe(ent:GetClass()))
-        end
+        )
       elseif t == msgArgTypes.MARKDOWN then
         self:AddJS("msg.appendMarkdown('%s')", string.JavascriptSafe(arg.value))
       elseif t == msgArgTypes.PLAYER then
@@ -248,6 +233,15 @@ local PANEL = {
     self:AddJS("msg.send()")
 
     self:RunJS()
+  end,
+  UpdateNewMessages = function(self)
+    if self.newMessages == 0 then return end
+
+    for i = 1, math.min(self.newMessages, 100) do -- append up to 100 of the new messages to the chatbox
+      self:AppendMessage(self.messages[i])
+    end
+
+    self.newMessages = 0
   end,
   Open = function(self)
     -- need to request focus so the client can type

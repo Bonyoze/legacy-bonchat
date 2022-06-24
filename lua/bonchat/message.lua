@@ -104,7 +104,14 @@ end
 
 function objMessage.AppendEntity(self, ent)
   if not isentity(ent) then return end
-  self:AppendData(msgArgTypes.ENTITY, ent)
+
+  if ent == NULL then
+    self:AppendData(msgArgTypes.TEXT, "NULL")
+  elseif ent:IsPlayer() then
+    self:AppendData(msgArgTypes.PLAYER, ent:Nick(), hook.Run("GetTeamColor", ent), ent:SteamID())
+  else
+    self:AppendData(msgArgTypes.TEXT, ent:GetClass())
+  end
 end
 
 function objMessage.AppendType(self, any)
