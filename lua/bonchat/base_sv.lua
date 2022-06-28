@@ -28,6 +28,8 @@ net.Receive("bonchat_say", function(_, ply)
 
   if #text == 0 then return end
 
+  MsgN(ply:Nick() .. ": " .. text)
+
   local newData = util.Compress(text)
 
   net.Start("bonchat_say")
