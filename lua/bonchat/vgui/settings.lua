@@ -29,8 +29,8 @@ local PANEL = {
     local cvarMaxMsgs = GetConVar(BonChat.CVAR.MAX_MSGS)
     self:AddSlider("Max Messages", BonChat.CVAR.MAX_MSGS, cvarMaxMsgs:GetInt(), cvarMaxMsgs:GetMin(), cvarMaxMsgs:GetMax(), 0)
     -- link length slider
-    local cvarLinkLen = GetConVar(BonChat.CVAR.LINK_LEN)
-    self:AddSlider("Max Link Length", BonChat.CVAR.LINK_LEN, cvarLinkLen:GetInt(), cvarLinkLen:GetMin(), cvarLinkLen:GetMax(), 0)
+    local cvarLinkLen = GetConVar(BonChat.CVAR.LINK_MAX_LEN)
+    self:AddSlider("Max Link Length", BonChat.CVAR.LINK_MAX_LEN, cvarLinkLen:GetInt(), cvarLinkLen:GetMin(), cvarLinkLen:GetMax(), 0)
     -- chat tick toggle
     self:AddCheckbox("Play chat sound", BonChat.CVAR.CHAT_TICK, BonChat.CVAR.GetChatTick())
     -- image embeds toggle

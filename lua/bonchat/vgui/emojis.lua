@@ -136,7 +136,7 @@ local PANEL = {
     -- steam
     do
       local steam = self:AddCategory("steam", "s")
-      local baseUrl = "https://steamcommunity.com/market/search/render?norender=1&category_753_Game%5B%5D=any&category_753_item_class%5B%5D=tag_item_class_4&appid=753&sort_column=name&sort_dir=asc&count=100"
+      local baseUrl = "https://steamcommunity.com/market/search/render?norender=1&category_753_Game[]=any&category_753_item_class[]=tag_item_class_4&appid=753&sort_column=name&sort_dir=asc&count=100"
 
       local function httpUrlEncode(data)
         local ndata = string.gsub(data, "[^%w _~%.%-]", function(str)
@@ -256,7 +256,7 @@ local PANEL = {
       if not self.lastQuery then return end
 
       -- append loading label
-      dhtml:CallJSParams("categories['%s'].appendLoadBtn(LOADING_LABEL_TEXT, true)", self.id)
+      dhtml:CallJSParams("categories['%s'].appendLoadBtn(LOADING_LABEL_TEXT, 1)", self.id)
       
       local currSearch = self.lastSearch
 

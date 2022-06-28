@@ -200,7 +200,7 @@ return [[<html>
 
     const LOAD_BUTTON_TEXT = "Click to view more",
     LOADING_LABEL_TEXT = "Loading emojis...",
-    ENTRY_PLACEHOLDER_TEXT = "search...";
+    ENTRY_PLACEHOLDER_TEXT = "Search for emojis";
 
     const entryMaxInput = 128;
 

@@ -11,22 +11,21 @@ BonChat.CVAR.MSG_COOLDOWN = "bonchat_msg_cooldown"
 -- client cvars
 BonChat.CVAR.ENABLED = "bonchat_enable"
 BonChat.CVAR.CHAT_TICK = "bonchat_chat_tick"
-BonChat.CVAR.MAX_MSGS = "bonchat_max_messages"
-BonChat.CVAR.LINK_LEN = "bonchat_link_length"
+BonChat.CVAR.MAX_MSGS = "bonchat_max_msgs"
+BonChat.CVAR.LINK_MAX_LEN = "bonchat_link_max_len"
 BonChat.CVAR.SHOW_IMGS = "bonchat_show_images"
 BonChat.CVAR.SHOW_TONE_EMOJIS = "bonchat_show_tone_emojis"
 
 
 CreateConVar(BonChat.CVAR.MSG_MAX_LEN, 1000, { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED }, "Set the character limit of messages", 256, 3000)
-CreateConVar(BonChat.CVAR.MSG_COOLDOWN, 0.5, { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED }, "Set the message send cooldown in seconds", 0, 60)
+CreateConVar(BonChat.CVAR.MSG_COOLDOWN, 0.75, { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED }, "Set the message send cooldown in seconds", 0.1, 60)
 
 CreateClientConVar(BonChat.CVAR.ENABLED, 1, true, nil, "Enable or disable BonChat")
 CreateClientConVar(BonChat.CVAR.CHAT_TICK, 1, true, nil, "Play the chat \"tick\" sound when a player sends a message")
-CreateClientConVar(BonChat.CVAR.MAX_MSGS, 2000, true, nil, "Set the max amount of messages that can be visible in the chatbox", 100, 2000)
-CreateClientConVar(BonChat.CVAR.LINK_LEN, 25, true, nil, "Set the character limit of links", 8, 256)
+CreateClientConVar(BonChat.CVAR.MAX_MSGS, 1000, true, nil, "Set the max amount of messages that can be loaded in the chatbox", 100, 1000)
+CreateClientConVar(BonChat.CVAR.LINK_MAX_LEN, 25, true, nil, "Set the character limit of links", 8, 256)
 CreateClientConVar(BonChat.CVAR.SHOW_IMGS, 1, true, nil, "Show image attachments")
 CreateClientConVar(BonChat.CVAR.SHOW_TONE_EMOJIS, 0, true, nil, "Show results for skin tone emojis when searching in the catalog")
-
 
 function BonChat.CVAR.GetMsgMaxLen()
   return GetConVar(BonChat.CVAR.MSG_MAX_LEN):GetInt()
@@ -48,8 +47,8 @@ function BonChat.CVAR.GetMaxMsgs()
   return GetConVar(BonChat.CVAR.MAX_MSGS):GetInt()
 end
 
-function BonChat.CVAR.GetLinkLength()
-  return GetConVar(BonChat.CVAR.LINK_LEN):GetInt()
+function BonChat.CVAR.GetLinkMaxLen()
+  return GetConVar(BonChat.CVAR.LINK_MAX_LEN):GetInt()
 end
 
 function BonChat.CVAR.GetShowImages()
@@ -60,41 +59,13 @@ function BonChat.CVAR.GetShowToneEmojis()
   return GetConVar(BonChat.CVAR.SHOW_TONE_EMOJIS):GetBool()
 end
 
-cvars.AddChangeCallback(BonChat.CVAR.ENABLED, function(_, _, new)
-  local num = tonumber(new)
-  if not num then return RunConsoleCommand(BonChat.CVAR.ENABLED, 1) end
-
-  local enabled = num ~= 0
-  if BonChat.enabled == enabled then return end
-  
-  if enabled then
-    BonChat.EnableChat()
-  else
-    BonChat.DisableChat()
-  end
-
-  BonChat.enabled = enabled
-end)
-
-BonChat.enabled = BonChat.CVAR.GetEnabled()
-
-function BonChat.UpdateChatboxConVar(name, val)
-  if not IsValid(BonChat.frame) or not IsValid(BonChat.frame.chatbox) then return end
-  BonChat.frame.chatbox:UpdateConVar(name, val)
+function BonChat.AddConvarCallback(name, callback)
+  cvars.AddChangeCallback(name, callback, "bonchat")
 end
 
-function BonChat.UpdateAllChatboxConVars()
-  BonChat.UpdateChatboxConVar(BonChat.CVAR.MSG_MAX_LEN, GetConVar(BonChat.CVAR.MSG_MAX_LEN):GetInt())
-  BonChat.UpdateChatboxConVar(BonChat.CVAR.MAX_MSGS, GetConVar(BonChat.CVAR.MAX_MSGS):GetInt())
-  BonChat.UpdateChatboxConVar(BonChat.CVAR.LINK_LEN, GetConVar(BonChat.CVAR.LINK_LEN):GetInt())
-  BonChat.UpdateChatboxConVar(BonChat.CVAR.SHOW_IMGS, GetConVar(BonChat.CVAR.SHOW_IMGS):GetInt())
+function BonChat.RemoveConvarCallback(name)
+  cvars.RemoveChangeCallback(name, "bonchat")
 end
-
--- updating convars needed by the chatbox
-cvars.AddChangeCallback(BonChat.CVAR.MSG_MAX_LEN, function(name, _, val) BonChat.UpdateChatboxConVar(name, val) end)
-cvars.AddChangeCallback(BonChat.CVAR.MAX_MSGS, function(name, _, val) BonChat.UpdateChatboxConVar(name, val) end)
-cvars.AddChangeCallback(BonChat.CVAR.LINK_LEN, function(name, _, val) BonChat.UpdateChatboxConVar(name, val) end)
-cvars.AddChangeCallback(BonChat.CVAR.SHOW_IMGS, function(name, _, val) BonChat.UpdateChatboxConVar(name, val) end)
 
 local plyMeta = FindMetaTable("Player")
 

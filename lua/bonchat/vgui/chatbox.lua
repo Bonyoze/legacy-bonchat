@@ -33,6 +33,10 @@ local function onTabKey(text) -- tries to mimic the tab functionality in the def
   BonChat.InsertText(table.concat(tbl, " "))
 end
 
+local function prependHidden(currTotal)
+  BonChat.frame.chatbox:PrependHiddenMessages(currTotal)
+end
+
 local function showProfile(steamID)
   local ply = player.GetBySteamID(steamID)
   if ply then
@@ -103,7 +107,7 @@ end
 local function jsSetData(name, val)
   return string.format("msg.MSG_WRAPPER.data('%s', '%s')",
     string.JavascriptSafe(name),
-    string.JavascriptSafe(val)
+    isstring(val) and string.JavascriptSafe(val) or val
   )
 end
 
@@ -119,6 +123,17 @@ local optionRules = {
 
 local msgArgTypes = BonChat.msgArgTypes
 
+BonChat.AddConvarCallback(BonChat.CVAR.MAX_MSGS, function(_, _, maxMsgs)
+  maxMsgs = tonumber(maxMsgs)
+  local chatbox = BonChat.frame.chatbox
+  if #chatbox.msgs > maxMsgs then
+    for i = 1, #chatbox.msgs - maxMsgs do
+      table.remove(chatbox.msgs, 1)
+    end
+  end
+  chatbox:CallJSParams("resetLoadBtn(%d)", #chatbox.msgs)
+end)
+
 local PANEL = {
   Init = function(self)
     self:Dock(FILL)
@@ -126,6 +141,7 @@ local PANEL = {
     self:AddFunc("playSound", surface.PlaySound)
     self:AddFunc("isTyping", isTyping)
     self:AddFunc("onTabKey", onTabKey)
+    self:AddFunc("prependHidden", prependHidden)
     self:AddFunc("showProfile", showProfile)
     self:AddFunc("pasteImage", pasteImage)
     self:AddFunc("showHoverLabel", BonChat.ShowHoverLabel)
@@ -172,28 +188,42 @@ local PANEL = {
       lastEscape = escape
 
       -- check if any new messages came in
-      self:UpdateNewMessages()
+      self:AppendNewMessages()
     end)
 
-    self.messages = {}
-    self.newMessages = 0
+    self.msgs = {}
+    self.msgsLookup = {}
+    self.msgIDNum = 0
+    self.newMsgs = 0
   end,
   SendMessage = function(self, msg)
-    table.insert(self.messages, 1, msg)
-    self.newMessages = self.newMessage + 1
+    local id = self.msgIDNum
+
+    -- add message
+    table.insert(self.msgs, { id = id, msg = msg })
+    self.msgsLookup[id] = msg
+
+    -- increment vars
+    self.msgIDNum = self.msgIDNum + 1
+    self.newMsgs = self.newMsgs + 1
+
+    -- remove oldest message if total exceeds the cvar
+    local maxMsgs = BonChat.CVAR.GetMaxMsgs()
+    if #self.msgs > maxMsgs then
+      for i = 1, #self.msgs - maxMsgs do
+        table.remove(self.msgs, 1)
+      end
+    end
   end,
-  AppendMessage = function(self, msg)
+  NewMessage = function(self, msg, id, prependHidden)
     self:ReadyJS()
 
     -- create a new message object
     self:AddJS("var msg = new Message()")
 
-    -- set sender of message
-    if IsValid(msg.sender) and msg.sender:IsPlayer() then
-      local steamID = options.sender:SteamID()
-      if steamID ~= "NULL" then -- can be 'NULL' if not authenticated with Steam
-        self:AddJS(jsSetData("sender", steamID))
-      end
+    -- set message id
+    if isnumber(id) then
+      self:AddJS(jsSetData("msgID", id))
     end
 
     -- apply options
@@ -230,18 +260,35 @@ local PANEL = {
     end
 
     -- send the message element
-    self:AddJS("msg.send()")
+    self:AddJS("msg.send(%d)", prependHidden and 1 or 0)
 
     self:RunJS()
   end,
-  UpdateNewMessages = function(self)
-    if self.newMessages == 0 then return end
+  AppendNewMessages = function(self)
+    if self.newMsgs == 0 then return end
+    local amt = self.newMsgs
+    self.newMsgs = 0
 
-    for i = 1, math.min(self.newMessages, 100) do -- append up to 100 of the new messages to the chatbox
-      self:AppendMessage(self.messages[i])
+    local last = #self.msgs
+    local start = last - math.min(amt, 100) + 1
+
+    for i = start, last do -- append up to 100 of the new messages to the chatbox
+      local data = self.msgs[i]
+      self:NewMessage(data.msg, data.id)
     end
 
-    self.newMessages = 0
+    self:CallJSParams("updateLoadBtn(%d)", #self.msgs)
+  end,
+  PrependHiddenMessages = function(self, currTotal)
+    local start = #self.msgs - currTotal
+    local last = math.max(start - 99, 1)
+
+    for i = start, last, -1 do
+      local data = self.msgs[i]
+      self:NewMessage(data.msg, data.id, true)
+    end
+
+    self:CallJSParams("loadBtn.removeClass('loading'); updateLoadBtn(%d)", #self.msgs)
   end,
   Open = function(self)
     -- need to request focus so the client can type
@@ -249,10 +296,10 @@ local PANEL = {
     self:CallJSParams("PANEL_OPEN(%d)", BonChat.chatMode)
   end,
   Close = function(self)
-    self:CallJS("PANEL_CLOSE()")
+    self:CallJSParams("PANEL_CLOSE(%d)", #self.msgs)
   end,
   UpdateConVar = function(self, name, val)
-    self:CallJSParams("updateConVar('%s', %d)", string.JavascriptSafe(name), val)
+    self:CallJSParams("updateConVar('%s', '%s')", string.JavascriptSafe(name), string.JavascriptSafe(val))
   end
 }
 

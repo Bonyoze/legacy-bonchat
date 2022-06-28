@@ -19,10 +19,10 @@ return [[<html>
       /* hiding when panel is closed */
 
       .panel-closed #text-entry {
-        display: none;
+        visibility: hidden;
       }
-      .panel-closed #chatbox::-webkit-scrollbar-track, .panel-closed #chatbox::-webkit-scrollbar-thumb, .panel-closed #chatbox .message {
-        background: transparent;
+      .panel-closed #chatbox::-webkit-scrollbar-track, .panel-closed #chatbox::-webkit-scrollbar-thumb, .panel-closed #message-container > .message {
+        background-color: transparent;
       }
       
       #chatbox {
@@ -67,6 +67,11 @@ return [[<html>
         text-align: center;
         cursor: pointer;
       }
+      #load-button.loading {
+        font-style: italic;
+        cursor: default;
+        pointer-events: none;
+      }
 
       #text-entry {
         position: fixed;
@@ -100,25 +105,14 @@ return [[<html>
         opacity: 0.65;
       }
 
-      .timestamp {
-        font-size: 0.8rem;
-        color: #fff;
-        background-color: rgba(0,0,0,0.5);
-        border-radius: 4px;
-        margin: -0.24rem 4px -0.24rem 0;
-        padding: 0.24rem;
-        -webkit-user-select: none;
-        user-select: none;
-        pointer-events: none;
-      }
-
       .player {
         font-weight: bold;
         cursor: pointer;
       }
 
       div.message {
-        padding: 4px;
+        padding: 0.25rem;
+        min-height: 1.4rem;
         white-space: pre-wrap;
         word-wrap: break-word;
         overflow: hidden;
@@ -135,13 +129,13 @@ return [[<html>
         border-bottom-right-radius: 4px;
       }
       .message:nth-child(odd) {
-        background: rgba(0,0,0,0.35);
+        background-color: rgba(0,0,0,0.35);
       }
       .message:nth-child(even) {
-        background: rgba(50,50,50,0.35);
+        background-color: rgba(50,50,50,0.35);
       }
       .message:hover {
-        background: rgba(0,0,0,0.1);
+        background-color: rgba(0,0,0,0.1);
       }
 
       .message-content *, .message-attachments * {
@@ -164,6 +158,18 @@ return [[<html>
         user-select: none;
       }
       .message.untouch-content > .message-content, .message.untouch-attachments > .message-attachments {
+        pointer-events: none;
+      }
+
+      .message.show-timestamp > .message-content > .timestamp {
+        font-size: 0.8rem;
+        color: #fff;
+        background-color: rgba(0,0,0,0.5);
+        border-radius: 4px;
+        margin: -0.24rem 4px -0.24rem 0;
+        padding: 0.24rem;
+        -webkit-user-select: none;
+        user-select: none;
         pointer-events: none;
       }
 
@@ -207,10 +213,13 @@ return [[<html>
         opacity: 1;
       }
 
-      span.link {
+      span.link, span.autolink {
         color: #00aff4;
-        text-decoration: underline;
         cursor: pointer;
+        pointer-events: all;
+      }
+      span.link:hover, span.autolink:hover {
+        text-decoration: underline;
       }
 
       div.attachment {
@@ -222,6 +231,7 @@ return [[<html>
         max-width: 100%;
         max-height: 200px;
         border-radius: 4px;
+        cursor: pointer;
       }
 
       img.emoji {
@@ -238,8 +248,8 @@ return [[<html>
   </head>
   <body>
     <div id="chatbox">
-      <div id="load-button-wrapper" hidden>
-        <span id="load-button"></span>
+      <div id="load-button-wrapper">
+        <span id="load-button">cum</span>
       </div>
       <div id="message-container"></div>
     </div>
@@ -481,10 +491,10 @@ return [[<html>
           };
         },
         html: function(node) {
-          return htmlTag("span", node.content, { class: "link", href: sanitizeURL(node.content) });
+          return htmlTag("span", node.content, { class: "autolink", href: sanitizeURL(node.content) });
         }
       },
-      url: {
+      link: {
         match: /^(https?:\/\/[^\s<]+[^<.,:;"')\]\s])/,
         parse: function(capture) {
           return {
@@ -658,28 +668,10 @@ return [[<html>
 
     const cvarCallbacks = {
       bonchat_msg_max_len: function(val) {
-        entryMaxInput = val;
+        entryMaxInput = parseInt(val);
       },
-      bonchat_max_messages: function(val) {
-        var msgs = msgContainer.children();
-
-        if (msgs.length > val) {
-          var index = msgs.length - val;
-          msgs.slice(0, index).remove();
-
-          var remaining = msgs.length - index;
-
-          // update message load button
-          if (remaining > 100) {
-            var total = remaining - 100;
-            loadButton
-              .data("msgIndex", total - 1)
-              .text(total + " hidden messages — Click to load" + (total > 100 ? " 100" : ""));
-          } else
-            loadButton.parent().hide();
-        }
-      },
-      bonchat_link_length: function(val) {
+      bonchat_link_max_len: function(val) {
+        val = parseInt(val);
         $(".link").each(function() {
           var link = $(this),
           url = link.attr("href");
@@ -690,6 +682,7 @@ return [[<html>
         });
       },
       bonchat_show_images: function(val) {
+        val = parseInt(val);
         $(".image-attachment").each(val
           ? function() {
             $(this).show().data("link").hide();
@@ -717,17 +710,23 @@ return [[<html>
     }
   </script>
   <script>
-    const chatbox = $("#chatbox"),
-    loadButton = $("#load-button"),
+    const body = $("body"),
+    chatbox = $("#chatbox"),
+    loadBtnWrapper = $("#load-button-wrapper"),
+    loadBtn = $("#load-button"),
     msgContainer = $("#message-container"),
     entry = $("#text-entry"),
     entryInput = $("#entry-input"),
     entryButton = $("#entry-button");
 
+    const MSG_PUBLIC_CHAT_TEXT = "Send a message in public chat",
+    MSG_TEAM_CHAT_TEXT = "Send a message in team chat",
+    LOAD_BTN_TEXT = " hidden messages — Click to load",
+    LOAD_BTN_LOADING_TEXT = "Loading messages..."
+
     var panelIsOpen = false,
     chatMode = 1, // 1 = public
     entryMaxInput = 0, // set by bonchat_msg_max_len cvar
-    firstNewMsg = null,
     hoverLabelTimeout = null;
 
     function getTimestampText(s) { // H:MM AM/PM
@@ -828,14 +827,16 @@ return [[<html>
       this._loadAttachments = function() {
         var maxAttachments = this.MAX_ATTACHMENTS,
         attachments = this.MSG_ATTACHMENTS,
-        links = this.MSG_WRAPPER.find(".link").slice(0, this.MAX_ATTACHMENTS);
+        links = this.MSG_WRAPPER.find(".link").slice(0, maxAttachments);
+        if (!links.length) return;
 
         // apply link length convar
+        var linkMaxLen = parseInt(convars.bonchat_link_max_len);
         links.each(function() {
           var link = $(this),
           url = link.attr("href");
-          if (url.length > convars.bonchat_link_length)
-            link.text(url.slice(0, convars.bonchat_link_length) + "...");
+          if (url.length > linkMaxLen)
+            link.text(url.slice(0, linkMaxLen) + "...");
           else
             link.text(url);
         });
@@ -862,14 +863,11 @@ return [[<html>
               img.off();
 
               attachment // setup attachment using the loaded image
-                .append($("<span class='link'>")
-                  .attr("href", url)
-                  .append(img.attr("alt", url))
-                )
+                .append(img.attr({ href: url, alt: url }))
                 .data("link", link);
               
               // apply show images convar
-              if (convars.bonchat_show_images)
+              if (parseInt(convars.bonchat_show_images))
                 link.hide();
               else
                 attachment.hide();
@@ -902,11 +900,9 @@ return [[<html>
             .attr("src", url);
         });
       };
-      this.send = function() {
+      this.send = function(prependHidden) {
         // set send time
-        this.MSG_WRAPPER.data({
-          sendTime: Date.now()
-        });
+        this.MSG_WRAPPER.data("sendTime", Date.now());
 
         // show timestamp
         if (this.MSG_WRAPPER.hasClass("show-timestamp"))
@@ -916,7 +912,18 @@ return [[<html>
           );
 
         var scrolled = isFullyScrolled();
-        this.MSG_WRAPPER.appendTo(msgContainer);
+
+        if (prependHidden)
+          this.MSG_WRAPPER.prependTo(msgContainer); // prepend the hidden message
+        else
+          this.MSG_WRAPPER.appendTo(msgContainer); // append the new message
+
+        // remove oldest message if exceeding 100 total
+        if (!prependHidden) {
+          var msgs = msgContainer.children();
+          if (msgs.length > 100) msgs.first().remove();
+        }
+
         if (scrolled || !panelIsOpen) scrollToBottom();
 
         // load attachments
@@ -927,21 +934,8 @@ return [[<html>
 
         if (!panelIsOpen) this.MSG_WRAPPER.startFadeOut(3000, 10000); // start fade out animation
 
-        var msgIndex = this.MSG_WRAPPER.index();
-        if (msgIndex >= 100) {
-          var oldestIndex = msgIndex - 100,
-          oldestMsg = msgContainer.children().eq(oldestIndex);
-          if (oldestMsg.length) {
-            oldestMsg.hide();
-            loadButton
-              .data("msgIndex", oldestIndex)
-              .text((oldestIndex + 1) + " hidden messages — Click to load" + (oldestIndex + 1 > 100 ? " 100" : ""))
-              .parent().show();
-          }
-        }
-
         // update max messages convar changes
-        applyConVarChanges("bonchat_max_messages");
+        //applyConVarChanges("bonchat_max_msgs");
       }
     };
 
@@ -986,6 +980,24 @@ return [[<html>
       if (text) document.execCommand("insertText", false, text);
     }
 
+    function updateLoadBtn(total) {
+      if (total > 100) {
+        var totalHidden = total - msgContainer.children().length;
+        if (totalHidden) {
+          loadBtn.text(totalHidden + LOAD_BTN_TEXT + (totalHidden > 100 ? " 100" : ""));
+          loadBtnWrapper.show();
+        } else
+          loadBtnWrapper.hide();
+      } else
+        loadBtnWrapper.hide();
+    }
+
+    function resetLoadBtn(total) {
+      var msgs = msgContainer.children();
+      msgs.slice(0, msgs.length - 100).remove(); // remove hidden messages
+      updateLoadBtn(total);
+    }
+
     function startHoverLabel(text) {
       hoverLabelTimeout = setTimeout(function() {
         glua.showHoverLabel(text);
@@ -994,20 +1006,15 @@ return [[<html>
 
     function applyChatMode(mode) {
       chatMode = mode;
-      entryInput.attr("placeholder", "typing in " + (mode == 1 ? "public" : "team") + " chat...");
+      entryInput.attr("placeholder", mode == 1 ? MSG_PUBLIC_CHAT_TEXT : MSG_TEAM_CHAT_TEXT);
       entryButton.attr("src", "asset://garrysmod/materials/icon16/" + (mode == 1 ? "world" : "group") + "_edit.png");
     }
 
-    loadButton.on("click", function() {
-      var msgIndex = loadButton.data("msgIndex"),
-      oldestIndex = msgIndex - 100;
-      msgContainer.children().slice(Math.max(oldestIndex + 1, 0), msgIndex + 1).show().resetFadeOut();
-      if (oldestIndex >= 0)
-        loadButton
-          .data("msgIndex", oldestIndex)
-          .text((oldestIndex + 1)  + " hidden messages — Click to load" + (oldestIndex + 1 > 100 ? " 100" : ""));
-      else
-        loadButton.parent().hide();
+    loadBtn.on("click", function() {
+      loadBtn
+        .addClass("loading")
+        .text(LOAD_BTN_LOADING_TEXT);
+      glua.prependHidden(msgContainer.children().length);
     });
 
     entryButton.on("click", function() {
@@ -1019,7 +1026,7 @@ return [[<html>
 
     entryInput
       .on("focus", function() {
-        glua.isTyping(true);
+        glua.isTyping(true); // update is typing status
       })
       .on("keydown", function(e) { // prevent default tab functionality
         if (e.which == 9) { // toggle the chat mode on tab
@@ -1071,24 +1078,26 @@ return [[<html>
         var elem = $(e.target),
         url = elem.attr("href") || elem.parents().attr("href");
 
-        if (url) { // check if clicking would've caused a redirect
-          // open the image or page with Glua
-          if (elem.is("img"))
-            glua.openImage(url,
-              elem.prop("naturalWidth"),
-              elem.prop("naturalHeight"),
-              elem.prop("width"),
-              elem.prop("height")
-            );
-          else
-            glua.openPage(url);
-        } else if (elem.hasClass("emoji")) { // check if clicked on an emoji
-          entryInput.focus();
-          insertText(elem.attr("alt") + " "); // paste the emoji into the entry
+        switch (true) {
+          case url != undefined: // check if clicking would've caused a redirect
+            // open the image or page with Glua
+            if (elem.is("img"))
+              glua.openImage(url,
+                elem.prop("naturalWidth"),
+                elem.prop("naturalHeight"),
+                elem.prop("width"),
+                elem.prop("height")
+              );
+            else
+              glua.openPage(url);
+            break;
+          case elem.hasClass("emoji"): // check if clicked on an emoji
+            entryInput.focus();
+            insertText(elem.attr("alt") + " "); // paste the emoji into the entry
+            break;
         }
 
-        // update is typing status
-        glua.isTyping(elem.parent(entry).length > 0); // true if click was inside the text entry
+        if (!entryInput.is(":focus")) glua.isTyping(false); // update is typing status
       })
       .on("mouseover", function(e) {
         var elem = $(e.target);
@@ -1107,41 +1116,29 @@ return [[<html>
         clearTimeout(hoverLabelTimeout);
         glua.hideHoverLabel();
       });
+    
+    // functions only called by GLua when the panel entity opens or closes
 
     function PANEL_OPEN(mode) {
       panelIsOpen = true;
-      $("html").removeClass("panel-closed"); // unhide the hidden elements
-      applyChatMode(mode);
-
-      var msgs = msgContainer.children();
-
-      msgs.slice(-100).resetFadeOut(); // make last 100 messages visible
-
-      // setup message load button
-      if (msgs.length > 100) {
-        var total = msgs.length - 100;
-        loadButton
-          .data("msgIndex", total - 1)
-          .text(total + " hidden messages — Click to load" + (total > 100 ? " 100" : ""))
-          .parent().show();
-      } else
-        loadButton.parent().hide();
-
+      applyChatMode(mode); // set chat mode (public/team)
+      body.removeClass("panel-closed"); // unhide the elements hidden when the panel was closed
+      msgContainer.children().resetFadeOut(); // unfade the messages
       entryInput.focus(); // focus so the user can type in it
     }
 
-    function PANEL_CLOSE() {
+    function PANEL_CLOSE(totalMsgs) {
       panelIsOpen = false;
-      $("html").addClass("panel-closed"); // hide some elements while the panel is closed
-
-      var msgs = msgContainer.children();
-
-      msgs.slice(0, msgs.length - 100).hide(); // hide messages after the last 100
-      msgs.slice(-100).startFadeOut(3000, 10000); // start fading out messages
-
+      resetLoadBtn(totalMsgs); // clears any hidden messages loaded with the load button
+      body.addClass("panel-closed"); // hide some elements when the panel is closed
       scrollToBottom(); // reset scroll
-
+      msgContainer.children().startFadeOut(3000, 10000); // start fading out messages
       entryInput.text(""); // clear the entry
     }
+
+    // keep scrolled to bottom while panel is closed
+    setInterval(function() {
+      if (!panelIsOpen) scrollToBottom();
+    }, 100);
   </script>
 </html>]]

@@ -28,9 +28,10 @@ local objMessage = {}
 objMessage.__index = objMessage
 objMessage.__tostring = function() return "BonChat Message" end
 
-function objMessage.SetPlayer(self, ply)
-  if ply ~= NULL and not ply:IsPlayer() then return end
+function objMessage.SetSender(self, ply)
   self.sender = ply
+  self.senderName = ply:IsPlayer() and ply:Nick() or "Console"
+  self.senderID = ply:IsPlayer() and ply:SteamID() or "N/A"
 end
 
 function objMessage.SetOptions(self, ...)
@@ -44,22 +45,6 @@ function objMessage.SetOptions(self, ...)
   end
 end
 
-function objMessage.SetCentered(self)
-  self:SetOptions("CENTER_CONTENT", "CENTER_ATTACH")
-end
-
-function objMessage.SetUnselectable(self)
-  self:SetOptions("NO_SELECT_CONTENT", "NO_SELECT_ATTACH")
-end
-
-function objMessage.SetUntouchable(self)
-  self:SetOptions("NO_TOUCH_CONTENT", "NO_TOUCH_ATTACH")
-end
-
-function objMessage.ShowTimestamp(self)
-  self:SetOptions("SHOW_TIMESTAMP")
-end
-
 function objMessage.RemoveOptions(self, ...)
   local opts = {...}
   local len = #opts
@@ -71,6 +56,28 @@ function objMessage.RemoveOptions(self, ...)
   end
 end
 
+function objMessage.UpdateOptions(self, method, ...)
+  if method == nil then method = true end
+  local func = method and self.SetOptions or self.RemoveOptions
+  func(self, ...)
+end
+
+function objMessage.SetCentered(self, set)
+  self:UpdateOptions(set, "CENTER_CONTENT", "CENTER_ATTACH")
+end
+
+function objMessage.SetUnselectable(self)
+  self:UpdateOptions(set, "NO_SELECT_CONTENT", "NO_SELECT_ATTACH")
+end
+
+function objMessage.SetUntouchable(self)
+  self:UpdateOptions(set, "NO_TOUCH_CONTENT", "NO_TOUCH_ATTACH")
+end
+
+function objMessage.ShowTimestamp(self)
+  self:UpdateOptions(set, "SHOW_TIMESTAMP")
+end
+
 function objMessage.GetArgs(self)
   return table.Copy(self.args)
 end
@@ -79,8 +86,8 @@ function objMessage.GetOptions(self)
   return table.GetKeys(self.options)
 end
 
-function objMessage.GetPlayer(self)
-  return self.sender
+function objMessage.GetSender(self)
+  return self.sender, self.senderName, self.senderID
 end
 
 function objMessage.AppendData(self, type, value)
@@ -108,7 +115,7 @@ function objMessage.AppendEntity(self, ent)
   if ent == NULL then
     self:AppendData(msgArgTypes.TEXT, "NULL")
   elseif ent:IsPlayer() then
-    self:AppendData(msgArgTypes.PLAYER, ent:Nick(), hook.Run("GetTeamColor", ent), ent:SteamID())
+    self:AppendData(msgArgTypes.PLAYER, { name = ent:Nick(), color = hook.Run("GetTeamColor", ent), steamID = ent:SteamID() })
   else
     self:AppendData(msgArgTypes.TEXT, ent:GetClass())
   end
@@ -116,13 +123,13 @@ end
 
 function objMessage.AppendType(self, any)
   if isstring(any) then
-    self:AppendData(msgArgTypes.TEXT, any)
+    self:AppendText(any)
   elseif istable(any) then
-    self:AppendData(msgArgTypes.COLOR, any)
+    self:AppendColor(any)
   elseif isentity(any) then
-    self:AppendData(msgArgTypes.ENTITY, any)
+    self:AppendEntity(any)
   else
-    self:AppendData(msgArgTypes.TEXT, tostring(any))
+    self:AppendText(tostring(any))
   end
 end
 
@@ -154,40 +161,7 @@ function BonChat.Message()
   }, objMessage)
 end
 
-local color_default = Color(151, 211, 255)
-
 function BonChat.SendMessage(msg)
   if not IsValid(BonChat.frame) then return end
   BonChat.frame.chatbox:SendMessage(msg)
-end
-
-function BonChat.SendDefaultMsg(msg)
-  local tbl = {}
-  local args = msg:GetArgs()
-  local len = #args
-  local color = color_default
-
-  for i = 1, len do
-    local arg = args[i]
-    local t = arg.type
-
-    if t == msgArgTypes.TEXT or t == msgArgTypes.MARKDOWN or t == msgArgTypes.ENTITY then
-      table.insert(tbl, arg.value)
-    elseif t == msgArgTypes.COLOR then
-      local clr = Color(arg.r, arg.g, arg.b)
-      table.insert(tbl, clr)
-      color = clr
-    elseif t == msgArgTypes.PLAYER then
-      if arg.color then
-        table.insert(tbl, arg.color)
-      end
-      table.insert(tbl, arg.name)
-      if arg.color then
-        table.insert(tbl, color)
-      end
-    end
-  end
-
-  BonChat.SuppressDefaultMsg()
-  chat.AddText(unpack(tbl))
 end

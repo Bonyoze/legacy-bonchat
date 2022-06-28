@@ -1,6 +1,58 @@
 include("bonchat/message.lua")
 include("bonchat/vgui/frame.lua")
 
+-- cvars
+cvars.AddChangeCallback(BonChat.CVAR.ENABLED, function(_, _, new)
+  local num = tonumber(new)
+  if not num then return RunConsoleCommand(BonChat.CVAR.ENABLED, 1) end
+
+  local enabled = num ~= 0
+  if BonChat.enabled == enabled then return end
+  
+  if enabled then
+    BonChat.EnableChat()
+  else
+    BonChat.DisableChat()
+  end
+
+  BonChat.enabled = enabled
+end)
+
+BonChat.enabled = BonChat.CVAR.GetEnabled()
+
+function BonChat.UpdateJSConVar(name, val)
+  if not IsValid(BonChat.frame) or not IsValid(BonChat.frame.chatbox) then return end
+  BonChat.frame.chatbox:UpdateConVar(name, val)
+end
+
+local jsConVars = {}
+
+function BonChat.UpdateAllJSConVars()
+  for cvar, _ in pairs(jsConVars) do
+    BonChat.UpdateJSConVar(cvar, GetConVar(cvar):GetString())
+  end
+end
+
+local function addJSConVar(cvar)
+  jsConVars[cvar] = true
+  BonChat.AddConvarCallback(cvar, function(name, _, val) BonChat.UpdateJSConVar(name, val) end)
+end
+
+-- js convars
+addJSConVar(BonChat.CVAR.MSG_MAX_LEN)
+addJSConVar(BonChat.CVAR.LINK_MAX_LEN)
+addJSConVar(BonChat.CVAR.SHOW_IMGS)
+
+local function sendInfoMessage(str)
+  local msg = BonChat.Message()
+  msg:SetCentered()
+  msg:SetUnselectable()
+  msg:SetUntouchable()
+  msg:AppendColor(color_white)
+  msg:AppendMarkdown(str)
+  BonChat.SendMessage(msg)
+end
+
 function BonChat.Log(...)
   MsgC(Color(255, 0, 105), "[BonChat] ", color_white, ...)
   MsgN()
@@ -21,16 +73,24 @@ end
 function BonChat.ReloadChat()
   if IsValid(BonChat.frame) then BonChat.frame:Remove() end
   BonChat.frame = vgui.Create("BonChat_Frame")
-  BonChat.UpdateAllChatboxConVars() -- initialize convar values
+  BonChat.UpdateAllJSConVars() -- initialize convar values in the chatbox
 end
 
 function BonChat.ClearChat()
   if not IsValid(BonChat.frame) then return end
-  BonChat.frame.chatbox:CallJS("msgContainer.empty(); loadButton.parent().hide();")
+  BonChat.frame.chatbox:CallJS("msgContainer.empty(); loadBtnWrapper.hide();")
+  BonChat.frame.chatbox.msgs = {}
 end
 
 function BonChat.Say(text, mode)
-  if BonChat.lastMsgTime and CurTime() - BonChat.lastMsgTime < BonChat.CVAR.GetMsgCooldown() then return end
+  if BonChat.lastMsgTime and CurTime() - BonChat.lastMsgTime < BonChat.CVAR.GetMsgCooldown() then
+    if not BonChat.sentWaitMsg then
+      local wait = math.Round(BonChat.CVAR.GetMsgCooldown() - (CurTime() - BonChat.lastMsgTime), 3)
+      sendInfoMessage(":i:error: **You must wait " .. wait .. " second" .. (wait ~= 1 and "s" or "") .. " before sending another message!**")
+      BonChat.sentWaitMsg = true
+    end
+    return
+  end
 
   text = string.Left(text or "", BonChat.CVAR.GetMsgMaxLen())
   if #text == 0 then return end
@@ -41,6 +101,7 @@ function BonChat.Say(text, mode)
   net.SendToServer()
 
   BonChat.lastMsgTime = CurTime()
+  BonChat.sentWaitMsg = false
 end
 
 function BonChat.ShowHoverLabel(text)
@@ -84,16 +145,6 @@ end
 
 function BonChat.GetResource(name)
   return include("bonchat/resources/" .. name .. ".lua")
-end
-
-local function sendInfoMessage(str)
-  local msg = BonChat.Message()
-  msg:SetCentered()
-  msg:SetUnselectable()
-  msg:SetUntouchable()
-  msg:AppendColor(color_white)
-  msg:AppendMarkdown(str)
-  BonChat.SendMessage(msg)
 end
 
 local function hideDefaultChat(name)

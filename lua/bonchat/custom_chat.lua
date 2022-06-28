@@ -162,6 +162,7 @@ local color_team = Color(24, 162, 35) -- (TEAM)
 -- player chat messages
 hook.Add("OnPlayerChat", "BonChat_PlayerMessages", function(ply, text, teamChat, isDead)
   local msg = BonChat.Message()
+  msg:SetSender(ply)
   msg:ShowTimestamp()
   if isDead then
     msg:AppendColor(color_dead)
