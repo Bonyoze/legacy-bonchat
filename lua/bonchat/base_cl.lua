@@ -264,7 +264,6 @@ concommand.Add("bonchat_reload", function()
 end)
 
 concommand.Add("bonchat_clear", function()
-  BonChat.frame.chatbox.messageQueue = {}
   BonChat.ClearChat()
   sendInfoMessage(":i:bin: **Chatbox was cleared**")
 end)
