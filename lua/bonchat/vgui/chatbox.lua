@@ -1,92 +1,8 @@
-include("bonchat/vgui/dhtml.lua")
-
-local function isTyping(bool)
-  if LocalPlayer().bonchatIsTyping == bool then return end -- ignore if didn't change
-  LocalPlayer().bonchatIsTyping = bool
-  net.Start("bonchat_istyping")
-    net.WriteBool(bool)
-  net.SendToServer()
-end
 
 --[[local function toggleChatMode()
   BonChat.chatMode = BonChat.chatMode == 1 and 2 or 1
   BonChat.frame.chatbox:CallJS("applyChatMode(%d)", BonChat.chatMode)
 end]]
-
-local function onTabKey(text) -- tries to mimic the tab functionality in the default chatbox
-  local tbl = string.Split(string.Trim(text), " ")
-  local last = string.lower(tbl[#tbl])
-
-  -- try to complete the player name
-  if #last > 0 then
-    for k, v in ipairs(player.GetAll()) do
-      local name = v:Nick()
-      local sub = string.lower(string.sub(name, 1, #last))
-      if sub == last then
-        tbl[#tbl] = name
-      end
-    end
-  end
-
-  -- trick for setting the entry text and moving the caret to the end
-  BonChat.SetText("")
-  BonChat.InsertText(table.concat(tbl, " "))
-end
-
-local function prependHidden(currTotal)
-  BonChat.frame.chatbox:PrependHiddenMessages(currTotal)
-end
-
-local function showProfile(steamID)
-  local ply = player.GetBySteamID(steamID)
-  if ply then
-    -- this function allows us to open the profile without having to ask first
-    ply:ShowProfile()
-  else
-    -- fallback method if we can't get the player entity
-    gui.OpenURL("https://steamcommunity.com/id/" .. util.SteamIDTo64(steamID))
-  end
-end
-
-local imagePasteCache = {}
-
-local function logFetchError(reason)
-  BonChat.LogError("Failed to load image paste", reason)
-end
-
-local function pasteImage(data)
-  local cachedLink = imagePasteCache[data]
-  if cachedLink then -- check if we already requested this exact base64 data
-    BonChat.InsertText(cachedLink .. " ")
-  else -- upload the image to Imgur and receive a link for it
-    HTTP({
-      url = "https://api.imgur.com/3/image.json?client_id=546c25a59c58ad7",
-      method = "post",
-      type = "application/json",
-      parameters = {
-        image = data,
-        type = "base64"
-      },
-      success = function(code, body)
-        if code == 200 then
-          local result = util.JSONToTable(body)
-          if result.success then
-            local link = result.data.link
-            imagePasteCache[data] = link
-            BonChat.InsertText(link .. " ")
-          else
-            logFetchError("Request was unsuccessful")
-          end
-        else
-          logFetchError(code)
-        end
-      end,
-      failed = function(reason)
-        logFetchError(reason)
-      end,
-    })
-  end
-end
 
 local function parseColorStyle(clr)
   return "rgb("
@@ -104,14 +20,15 @@ local function jsAddClass(val)
   )
 end
 
-local function jsSetData(name, val)
-  return string.format("msg.MSG_WRAPPER.data('%s', '%s')",
+local function jsSetDataAttr(name, val)
+  return string.format("msg.MSG_WRAPPER.attr('data-%s', '%s')",
     string.JavascriptSafe(name),
     isstring(val) and string.JavascriptSafe(val) or val
   )
 end
 
 local optionRules = {
+  DISMISSIBLE       = jsAddClass("dismissible"),
   CENTER_CONTENT    = jsAddClass("center-content"),
   CENTER_ATTACH     = jsAddClass("center-attachments"),
   NO_SELECT_CONTENT = jsAddClass("unselect-content"),
@@ -120,8 +37,6 @@ local optionRules = {
   NO_TOUCH_ATTACH   = jsAddClass("untouch-attachments"),
   SHOW_TIMESTAMP    = jsAddClass("show-timestamp")
 }
-
-local msgArgTypes = BonChat.msgArgTypes
 
 BonChat.AddConvarCallback(BonChat.CVAR.MAX_MSGS, function(_, _, maxMsgs)
   maxMsgs = tonumber(maxMsgs)
@@ -139,16 +54,48 @@ local PANEL = {
     self:Dock(FILL)
 
     self:AddFunc("playSound", surface.PlaySound)
-    self:AddFunc("isTyping", isTyping)
-    self:AddFunc("onTabKey", onTabKey)
-    self:AddFunc("prependHidden", prependHidden)
-    self:AddFunc("showProfile", showProfile)
-    self:AddFunc("pasteImage", pasteImage)
+    --self.dhtml:AddFunc("setClipboardText", SetClipboardText)
+
     self:AddFunc("showHoverLabel", BonChat.ShowHoverLabel)
     self:AddFunc("hideHoverLabel", BonChat.HideHoverLabel)
     self:AddFunc("say", BonChat.Say)
     self:AddFunc("openPage", BonChat.OpenPage)
     self:AddFunc("openImage", BonChat.OpenImage)
+    self:AddFunc("pasteImage", BonChat.PasteImage)
+
+    self:AddFunc("prependHiddenMessages", function(currTotal) self:PrependHiddenMessages(currTotal) end)
+    self:AddFunc("dismissMessage", function(id) self:DismissMessage(id) end)
+
+    self:AddFunc("isTyping", function(bool)
+      if LocalPlayer().bonchatIsTyping == bool then return end -- ignore if didn't change
+      LocalPlayer().bonchatIsTyping = bool
+      net.Start("bonchat_istyping")
+        net.WriteBool(bool)
+      net.SendToServer()
+    end)
+    self:AddFunc("onTabKey", function(text) -- implement same tab functionality used in the default chatbox
+      -- trick for setting the entry text and moving the caret to the end
+      BonChat.SetText("")
+      BonChat.InsertText(hook.Run("OnChatTab", text))
+    end)
+    self:AddFunc("showProfile", function(steamID)
+      local ply = player.GetBySteamID(steamID)
+      if ply then
+        -- this function allows us to open the profile without having to ask first
+        ply:ShowProfile()
+      else
+        -- fallback method if we can't get the player entity
+        gui.OpenURL("https://steamcommunity.com/id/" .. util.SteamIDTo64(steamID))
+      end
+    end)
+    self:AddFunc("retryAttachment", function(msgID, attachID, src)
+      local attachImg = string.format("getAttachmentByID(%d, getMessageByID(%d)).find('img')", attachID, msgID)
+      BonChat.LoadAttachment(src, function(newSrc)
+        self:CallJSParams(attachImg .. ".attr('src', '%s')", newSrc)
+      end, function()
+        self:CallJS(attachImg .. ".trigger('error')")
+      end)
+    end)
 
     self:SetHTML(BonChat.GetResource("chatbox.html"))
 
@@ -159,11 +106,11 @@ local PANEL = {
 
     for _, v in pairs(emojiData) do
       for i = 1, #v, 2 do
-        emojiData[v[i]] = v[i + 1]
+        emojiLookup[v[i]] = v[i + 1]
       end
     end
 
-    self:CallJSParams("EMOJI_DATA = JSON.parse('%s')", util.TableToJSON(emojiData))
+    self:CallJSParams("EMOJI_DATA = JSON.parse('%s')", util.TableToJSON(emojiLookup))
 
     local lastEnter = false
     local lastEscape = false
@@ -197,11 +144,10 @@ local PANEL = {
     self.newMsgs = 0
   end,
   SendMessage = function(self, msg)
-    local id = self.msgIDNum
-
     -- add message
-    table.insert(self.msgs, { id = id, msg = msg })
-    self.msgsLookup[id] = msg
+    msg:SetID(self.msgIDNum)
+    table.insert(self.msgs, msg)
+    self.msgsLookup[self.msgIDNum] = msg
 
     -- increment vars
     self.msgIDNum = self.msgIDNum + 1
@@ -215,15 +161,15 @@ local PANEL = {
       end
     end
   end,
-  NewMessage = function(self, msg, id, prependHidden)
+  NewMessage = function(self, msg, prependHidden)
     self:ReadyJS()
 
     -- create a new message object
-    self:AddJS("var msg = new Message()")
-
-    -- set message id
-    if isnumber(id) then
-      self:AddJS(jsSetData("msgID", id))
+    local id = msg:GetID()
+    if id then
+      self:AddJS("var msg = new Message(%d)", id)
+    else
+      self:AddJS("var msg = new Message()")
     end
 
     -- apply options
@@ -234,28 +180,41 @@ local PANEL = {
       if rule then self:AddJS(rule) end
     end
 
-    -- add the arguments
+    -- add arguments
     local args = msg:GetArgs()
     for i = 1, #args do
       local arg = args[i]
-      local t = arg.type
+      local t, v = arg.type, arg.value
 
-      if t == msgArgTypes.TEXT then
-        self:AddJS("msg.appendText('%s')", string.JavascriptSafe(arg.value))
-      elseif t == msgArgTypes.COLOR then
+      if t == BonChat.msgArgTypes.TEXT then
+        self:AddJS("msg.appendText('%s')", string.JavascriptSafe(v))
+      elseif t == BonChat.msgArgTypes.COLOR then
         self:AddJS("msg.setTextColor('rgb(%d,%d,%d)')",
-          isnumber(arg.r) and arg.r % 256 or 255,
-          isnumber(arg.g) and arg.g % 256 or 255,
-          isnumber(arg.b) and arg.b % 256 or 255
+          isnumber(v.r) and v.r % 256 or 255,
+          isnumber(v.g) and v.g % 256 or 255,
+          isnumber(v.b) and v.b % 256 or 255
         )
-      elseif t == msgArgTypes.MARKDOWN then
-        self:AddJS("msg.appendMarkdown('%s')", string.JavascriptSafe(arg.value))
-      elseif t == msgArgTypes.PLAYER then
+      elseif t == BonChat.msgArgTypes.MARKDOWN then
+        self:AddJS("msg.appendMarkdown('%s')", string.JavascriptSafe(v))
+      elseif t == BonChat.msgArgTypes.PLAYER then
         self:AddJS("msg.appendPlayer('%s', '%s', '%s')",
-          string.JavascriptSafe(arg.name),
-          arg.color and parseColorStyle(arg.color) or "",
-          string.JavascriptSafe(arg.steamID or "")
+          string.JavascriptSafe(v.name),
+          v.color and parseColorStyle(v.color) or "",
+          string.JavascriptSafe(v.steamID or "")
         )
+      end
+    end
+
+    -- add attachments
+    local attachments = msg:GetAttachments()
+    for i = 1, #attachments do
+      local attachment = attachments[i]
+      local t, v = attachment.type, attachment.value
+
+      if t == BonChat.msgAttachTypes.IMAGE then
+        self:AddJS("msg.appendImage('%s')", string.JavascriptSafe(v))
+      elseif t == BonChat.msgAttachTypes.VIDEO then
+        self:AddJS("msg.appendVideo('%s')", string.JavascriptSafe(v))
       end
     end
 
@@ -273,8 +232,7 @@ local PANEL = {
     local start = last - math.min(amt, 100) + 1
 
     for i = start, last do -- append up to 100 of the new messages to the chatbox
-      local data = self.msgs[i]
-      self:NewMessage(data.msg, data.id)
+      self:NewMessage(self.msgs[i])
     end
 
     self:CallJSParams("updateLoadBtn(%d)", #self.msgs)
@@ -284,11 +242,20 @@ local PANEL = {
     local last = math.max(start - 99, 1)
 
     for i = start, last, -1 do
-      local data = self.msgs[i]
-      self:NewMessage(data.msg, data.id, true)
+      self:NewMessage(self.msgs[i], true)
     end
 
     self:CallJSParams("loadBtn.removeClass('loading'); updateLoadBtn(%d)", #self.msgs)
+  end,
+  DismissMessage = function(self, id)
+    local msg = self.msgsLookup[id]
+    if not msg then return end
+    local key = table.KeyFromValue(self.msgs, msg)
+    if not key then return end
+
+    table.remove(self.msgs, key)
+    self.msgsLookup[id] = nil
+    self:CallJSParams("getMessageByID(%d).remove()", id) -- try to find and remove the message
   end,
   Open = function(self)
     -- need to request focus so the client can type

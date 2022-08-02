@@ -1,8 +1,11 @@
 return [[<html>
   <head>
+    <meta charset="utf-8">
     <style>
       html {
         font-size: 14px;
+        -webkit-user-select: none;
+        user-select: none;
       }
 
       body {
@@ -30,8 +33,6 @@ return [[<html>
         width: 1.375rem;
         height: 1.375rem;
         cursor: pointer;
-        -webkit-user-select: none;
-        user-select: none;
       }
       #entry-input {
         resize: none;
@@ -39,6 +40,8 @@ return [[<html>
         outline: none;
         color: #fff;
         white-space: nowrap;
+        -webkit-user-select: text;
+        user-select: text;
       }
       #entry-input[placeholder]:empty:before {
         content: attr(placeholder);
@@ -54,11 +57,9 @@ return [[<html>
         top: 0;
         left: 0;
         right: 0;
-        margin-top: 40px;
+        margin-top: 30px;
         overflow-x: hidden;
         overflow-y: scroll;
-        -webkit-user-select: none;
-        user-select: none;
       }
       #category-container::-webkit-scrollbar {
         width: 8px;
@@ -73,7 +74,7 @@ return [[<html>
       }
 
       .category {
-        padding-bottom: 1rem;
+        padding-bottom: 0.5rem;
       }
       .category .category-title {
         font-weight: bold;
@@ -83,11 +84,13 @@ return [[<html>
       .category .category-emojis {
         display: table;
         margin: 0.5rem auto 0 auto;
-        text-align: center;
+        padding: 0.5rem;
+        border-radius: 4px;
+        background-color: rgba(50,50,50,0.35);
       }
 
       .category-emojis .load-button-wrapper {
-        margin-top: 1rem;
+        margin-top: 0.5rem;
         width: 100%;
         text-align: center;
       }
@@ -124,7 +127,7 @@ return [[<html>
         cursor: pointer;
       }
 
-      .invalid-emoji {
+      .blank-emoji {
         display: inline-block;
         margin: 0.125rem;
         width: 1.375rem;
@@ -140,7 +143,7 @@ return [[<html>
     <div id="category-container"></div>
   </body>
   <script type="text/javascript" src="asset://garrysmod/html/js/thirdparty/jquery.js"></script>
-  <script type="text/javascript"> // item parsers script
+  <script> // item parsers script
     const UFE0Fg = /\uFE0F/g,
     U200D = String.fromCharCode(0x200D);
 
@@ -193,72 +196,140 @@ return [[<html>
       }
     };
   </script>
-  <script type="text/javascript">
+  <script> // main script
     const entryButton = $("#entry-button"),
     entryInput = $("#entry-input"),
     categoryContainer = $("#category-container");
 
-    const LOAD_BUTTON_TEXT = "Click to view more",
-    LOADING_LABEL_TEXT = "Loading emojis...",
-    ENTRY_PLACEHOLDER_TEXT = "Search for emojis";
+    // strings for elements whose text is updated by js
+    const ENTRY_PLACEHOLDER_TEXT = "Search for emojis",
+    LOAD_BUTTON_TEXT = "Click to view more",
+    LOADING_LABEL_TEXT = "Loading emojis...";
 
-    const entryMaxInput = 128;
+    const ENTRY_MAX_INPUT = 128;
 
-    var categories = {};
-    
-    function Category(id, source, parser) {
-      this.ID = id;
-      this.SOURCE = source ? source : null;
-      this.PARSER = parser ? itemParsers[parser] : itemParsers[id];
+    var hoverLabelTimeout = null;
 
-      this.CATEGORY_WRAPPER = $("<div class='category'>").appendTo(categoryContainer)
-      this.CATEGORY_TITLE = $("<span class='category-title'>").appendTo(this.CATEGORY_WRAPPER);
-      this.CATEGORY_EMOJIS = $("<div class='category-emojis'>").appendTo(this.CATEGORY_WRAPPER);
+    function isFullyScrolled() {
+      var e = categoryContainer.get(0);
+      return Math.abs(e.scrollHeight - e.clientHeight - e.scrollTop) < 1;
+    }
 
-      this.setTitle = function(title) {
-        this.CATEGORY_TITLE.text(title || "");
-      };
-      this.appendPage = function(data, last) {
-        // try removing wrapper from previous query or page load
-        $(".load-button-wrapper", this.CATEGORY_EMOJIS).remove();
+    function scrollToBottom() {
+      var e = categoryContainer.get(0);
+      e.scrollTop = e.scrollHeight;
+    }
 
-        for (var i = 0; i < data.length; i++) {
-          var item = this.PARSER(data[i]);
-          if (item.name && item.src)
-            $("<img class='emoji'>")
-              .data("name", item.name)
-              .data("shortcode", ":" + (this.SOURCE ? this.SOURCE + ":" : "") + item.name + ":")
-              .appendTo(this.CATEGORY_EMOJIS)
-              .on("error", function() {
-                // incase the emoji fails to load, mark it invalid
-                $(this)
-                  .off()
-                  .replaceWith($("<span class='invalid-emoji'>"));
-              })
-              .attr("src", item.src);
-          else
-            $("<span class='invalid-emoji'>").appendTo(this.CATEGORY_EMOJIS);
+    /*
+      set the title of the category
+        title: the text to set the title to
+    */
+    jQuery.fn.setTitle = function(title) {
+      if (!this.hasClass("category")) return;
+
+      $(".category-title", this).text(title || "");
+
+      return this;
+    };
+
+    /*
+      append a page of emojis to the category
+        data: a list of emojis
+        last: set to 1 or true if this is the last page
+    */
+    jQuery.fn.appendPage = function(data, last) {
+      if (!this.hasClass("category")) return;
+
+      var emojis = $(".category-emojis", this),
+      source = this.data("source"),
+      parser = this.data("parser");
+
+      // try removing wrapper from previous query or page load
+      $(".load-button-wrapper", emojis).remove();
+
+      if (data.length) { // load emojis
+        this.show();
+
+        for (var i = 0; i < Math.ceil(data.length / 10) * 10; i++) {
+          var item = data[i],
+          valid = false;
+
+          if (item) {
+            item = parser(item);
+            if (item.name && item.src) {
+              $("<img class='emoji'>")
+                .data("name", item.name)
+                .data("shortcode", ":" + (source ? source + ":" : "") + item.name + ":")
+                .appendTo(emojis)
+                .on("error", function() {
+                  // incase the emoji fails to load, fill the space with a blank element
+                  $(this)
+                    .off()
+                    .replaceWith($("<span class='blank-emoji'>"));
+                })
+                .attr("src", item.src);
+              valid = true;
+            }
+          }
           
-          if ((i + 1) % 10 == 0) this.CATEGORY_EMOJIS.append($("<br>"));
+          if (!valid) $("<span class='blank-emoji'>").appendTo(emojis);
+          
+          if ((i + 1) % 10 === 0) emojis.append($("<br>"));
         }
 
         // append load button if more pages can still be loaded
-        if (last !== 1) this.appendLoadBtn(LOAD_BUTTON_TEXT);
-      };
-      this.clearPages = function() {
-        this.CATEGORY_EMOJIS.empty()
-      };
-      this.appendLoadBtn = function(text, isLabel) {
-        $("<div class='load-button-wrapper'>")
-          .append($("<span>")
-            .attr("class", isLabel ? "loading-label" : "load-button")
-            .text(text)
-          )
-          .appendTo(this.CATEGORY_EMOJIS);
-      };
+        if (!last) this.appendLoadBtn(LOAD_BUTTON_TEXT);
+      } else
+        this.hide();
+      
+      return this;
+    };
 
-      this.CATEGORY_WRAPPER.data("obj", this);
-      categories[id] = this;
+    /*
+      remove all pages from the category
+    */
+    jQuery.fn.clearPages = function() {
+      if (!this.hasClass("category")) return;
+
+      $(".category-emojis", this).empty();
+
+      return this;
+    };
+
+    /*
+      adds a load button or loading label
+        text:    the text that should be on the button/label
+        isLabel: set to 1 or true if it should be a loading label
+    */
+    jQuery.fn.appendLoadBtn = function(text, isLabel) {
+      if (!this.hasClass("category")) return;
+
+      var emojis = $(".category-emojis", this),
+      scrolled = isFullyScrolled();
+
+      $("<div class='load-button-wrapper'>")
+        .append($("<span>")
+          .attr("class", isLabel ? "loading-label" : "load-button")
+          .text(text)
+        )
+        .appendTo(emojis);
+
+      if (scrolled) scrollToBottom();
+
+      return this;
+    };
+
+    function Category(id, source, parser) {
+      this.CATEGORY_WRAPPER = $("<div class='category' data-id='" + id + "'>")
+        .data("source", source || null)
+        .data("parser", parser ? itemParsers[parser] : itemParsers[id])
+        .appendTo(categoryContainer);
+      this.CATEGORY_TITLE = $("<span class='category-title'>").appendTo(this.CATEGORY_WRAPPER);
+      this.CATEGORY_EMOJIS = $("<div class='category-emojis'>").appendTo(this.CATEGORY_WRAPPER);
+    }
+
+    function getCategoryByID(id) {
+      return $(".category[data-id='" + id + "']", categoryContainer);
     }
 
     function submitEntry() {
@@ -267,6 +338,7 @@ return [[<html>
         .attr("placeholder", ENTRY_PLACEHOLDER_TEXT)
         .text("")
         .focus();
+      categoryContainer.scrollTop(0);
     }
 
     function getUTF8ByteLength(str) {
@@ -287,13 +359,18 @@ return [[<html>
 
     // append text into the input safely
     function insertText(text) {
-      text = text
-        .replace(/[\u000a\u000d\u2028\u2029\u0009]/g, "") // prevent new lines and tab spaces
-        .substring(0, entryMaxInput - getUTF8ByteLength(getText()) + getUTF8ByteLength(document.getSelection().toString())); // make sure it won't exceed the char limit
-      if (text) document.execCommand("insertText", false, text);
+      text = text.replace(/[\u000a\u000d\u2028\u2029\u0009]/g, ""); // prevent new lines and tab spaces
+      var len = text.length,
+      maxLen = ENTRY_MAX_INPUT - getUTF8ByteLength(getText()) + getUTF8ByteLength(document.getSelection().toString());
+      if (len > maxLen) {
+        text = text.substring(0, maxLen); // make sure it won't exceed the char limit
+        glua.playSound("resource/warning.wav");
+      }
+      if (text) {
+        document.execCommand("insertText", false, text);
+        entryInput.scrollLeft(entryInput.get(0).scrollWidth);
+      }
     }
-    
-    var hoverLabelTimeout;
 
     function startHoverLabel(text) {
       hoverLabelTimeout = setTimeout(function() {
@@ -316,7 +393,7 @@ return [[<html>
         }
 
         // prevent registering certain keys and exceeding the char limit
-        return !e.ctrlKey && !e.metaKey && !e.altKey && e.which != 8 && getUTF8ByteLength(getText() + String.fromCharCode(e.which)) < entryMaxInput;
+        return !e.ctrlKey && !e.metaKey && !e.altKey && e.which != 8 && getUTF8ByteLength(getText() + String.fromCharCode(e.which)) < ENTRY_MAX_INPUT;
       })
       .on("paste", function(e) {
         // prevent pasting html or new lines into the entry
@@ -328,11 +405,16 @@ return [[<html>
     $(document)
       .on("click", function(e) {
         var elem = $(e.target);
-        if (elem.hasClass("load-button")) { // try to load next page
-          glua.loadPage(elem.closest(".category").data("obj").ID); // load more emojis
-          elem.remove();
-        } else if (elem.hasClass("emoji")) // paste the emoji into the chatbox entry
-          glua.insertText(elem.data("shortcode") + " ");
+
+        switch (true) {
+          case elem.hasClass("load-button"):  // try to load next page
+            glua.loadPage(elem.closest(".category").attr("data-id")); // load more emojis
+            elem.remove();
+            break;
+          case elem.hasClass("emoji"): // paste the emoji into the chatbox entry
+            glua.insertText(elem.data("shortcode") + " ");
+            break;
+        }
         
         entryInput.focus();
       })

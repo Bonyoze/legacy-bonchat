@@ -4,6 +4,8 @@ return [[<html>
     <style>
       html {
         font-size: 14px;
+        -webkit-user-select: none;
+        user-select: none;
       }
 
       body {
@@ -18,7 +20,7 @@ return [[<html>
 
       /* hiding when panel is closed */
 
-      .panel-closed #text-entry {
+      .panel-closed #text-entry, .panel-closed .dismiss-button {
         visibility: hidden;
       }
       .panel-closed #chatbox::-webkit-scrollbar-track, .panel-closed #chatbox::-webkit-scrollbar-thumb, .panel-closed #message-container > .message {
@@ -37,8 +39,6 @@ return [[<html>
         padding-right: 2px;
         overflow-x: hidden;
         overflow-y: scroll;
-        -webkit-user-select: none;
-        user-select: none;
       }
       #chatbox::-webkit-scrollbar {
         width: 8px;
@@ -88,8 +88,6 @@ return [[<html>
         width: 1.375rem;
         height: 1.375rem;
         cursor: pointer;
-        -webkit-user-select: none;
-        user-select: none;
       }
       #entry-input {
         resize: none;
@@ -97,6 +95,8 @@ return [[<html>
         outline: none;
         color: #fff;
         white-space: nowrap;
+        -webkit-user-select: text;
+        user-select: text;
       }
       #entry-input[placeholder]:empty:before {
         content: attr(placeholder);
@@ -116,8 +116,6 @@ return [[<html>
         white-space: pre-wrap;
         word-wrap: break-word;
         overflow: hidden;
-        -webkit-user-select: text;
-        user-select: text;
         pointer-events: all;
       }
       .message:first-child {
@@ -129,13 +127,18 @@ return [[<html>
         border-bottom-right-radius: 4px;
       }
       .message:nth-child(odd) {
-        background-color: rgba(0,0,0,0.35);
+        background-color: rgba(0,0,0,0.1);
       }
       .message:nth-child(even) {
-        background-color: rgba(50,50,50,0.35);
+        background-color: rgba(0,0,0,0.2);
       }
       .message:hover {
-        background-color: rgba(0,0,0,0.1);
+        background-color: rgba(0,0,0,0.3);
+      }
+
+      .message-content, .message-attachments {
+        -webkit-user-select: text;
+        user-select: text;
       }
 
       .message-content *, .message-attachments * {
@@ -143,6 +146,26 @@ return [[<html>
       }
 
       /* message option styling */
+
+      .message.dismissible > .message-content {
+        padding-right: 4rem;
+      }
+      .message.dismissible > .message-content > .dismiss-button {
+        position: absolute;
+        font-size: 0.8rem;
+        color: #00aff4;
+        cursor: pointer;
+        right: 6px;
+        -webkit-user-select: none;
+        user-select: none;
+        pointer-events: all;
+      }
+      .dismiss-button:before {
+        content: "Dismiss";
+      }
+      .dismiss-button:hover {
+        text-decoration: underline;
+      }
 
       .message.center-content > .message-content {
         display: table;
@@ -153,11 +176,11 @@ return [[<html>
         display: table;
         margin: 0 auto;
       }
-      .message.unselect-content > .message-content, .message.unselect-attachments > .message-attachments {
+      .message.unselect-content > .message-content *, .message.unselect-attachments > .message-attachments * {
         -webkit-user-select: none;
         user-select: none;
       }
-      .message.untouch-content > .message-content, .message.untouch-attachments > .message-attachments {
+      .message.untouch-content > .message-content *, .message.untouch-attachments > .message-attachments * {
         pointer-events: none;
       }
 
@@ -166,37 +189,11 @@ return [[<html>
         color: #fff;
         background-color: rgba(0,0,0,0.5);
         border-radius: 4px;
-        margin: -0.24rem 4px -0.24rem 0;
-        padding: 0.24rem;
+        margin: -0.25rem 4px -0.25rem 0;
+        padding: 0.25rem;
         -webkit-user-select: none;
         user-select: none;
         pointer-events: none;
-      }
-
-      .new-divider {
-        overflow: hidden;
-        text-align: center;
-        color: #f00;
-        font-size: 0.8rem;
-        margin-bottom: 4px;
-        pointer-events: none;
-      }
-      .new-divider:before, .new-divider:after {
-        height: 1px;
-        width: 50%;
-        background-color: #f00;
-        display: inline-block;
-        position: relative;
-        vertical-align: middle;
-        content: "";
-      }
-      .new-divider:before {
-        right: 0.5rem;
-        margin-left: -50%;
-      }
-      .new-divider:after {
-        left: 0.5rem;
-        margin-right: -50%;
       }
 
       /* markdown styling */
@@ -223,15 +220,39 @@ return [[<html>
       }
 
       div.attachment {
+        display: inline-block;
         margin-top: 4px;
+        margin-right: 4px;
+        border-radius: 4px;
+        overflow: hidden;
+        cursor: pointer;
+      }
+      .attachment.loading, .attachment.failed, .attachment.blocked, .attachment.hidden {
+        padding: 0.25rem;
+        font-size: 0.8rem;
+        color: #fff;
+        background-color: rgba(0,0,0,0.5);
+        -webkit-user-select: none;
+        user-select: none;
       }
 
       div.image-attachment img {
-        display: inline-block;
         max-width: 100%;
-        max-height: 200px;
-        border-radius: 4px;
-        cursor: pointer;
+      }
+      .image-attachment.loading img, .image-attachment.failed img, .image-attachment.blocked img, .image-attachment.hidden img {
+        display: none;
+      }
+      .image-attachment.loading::before {
+        content: "(Image loading...)";
+      }
+      .image-attachment.failed::before {
+        content: "(Image failed to load)";
+      }
+      .image-attachment.blocked::before {
+        content: "(Image not whitelisted)";
+      }
+      .image-attachment.hidden::before {
+        content: "(Image hidden)";
       }
 
       img.emoji {
@@ -249,7 +270,7 @@ return [[<html>
   <body>
     <div id="chatbox">
       <div id="load-button-wrapper">
-        <span id="load-button">cum</span>
+        <span id="load-button"></span>
       </div>
       <div id="message-container"></div>
     </div>
@@ -276,13 +297,16 @@ return [[<html>
       // Tenor
       "tenor.com",
       // Facepunch
-      "files.facepunch.com"
+      "files.facepunch.com",
+      // Reddit
+      "i.redd.it",
+      "preview.redd.it"
     ];
 
     function isWhitelistedURL(href) {
-      var url = document.createElement("a");
-      url.href = href;
-      var domain = url.hostname + url.pathname;
+      var a = document.createElement("a");
+      a.href = href;
+      var domain = a.host + a.pathname;
       return WHITELIST_DOMAINS.some(function(x) { return domain.substring(0, x.length) == x; });
     }
   </script>
@@ -364,22 +388,6 @@ return [[<html>
         return SANITIZE_TEXT_CODES[char];
       });
     }
-
-    function sanitizeURL(url) {
-      if (url == null) return null;
-      try {
-        var prot = decodeURIComponent(url)
-          .replace(/[^A-Za-z0-9/:]/g, "")
-          .toLowerCase();
-        if (prot.indexOf("javascript:") === 0
-          || prot.indexOf("vbscript:") === 0
-          || prot.indexOf("data:") === 0
-        ) return null;
-      } catch (e) {
-        return null;
-      }
-      return url;
-    };
 
     function htmlTag(tagName, content, attributes, isClosed) {
       attributes = attributes || {};
@@ -484,14 +492,14 @@ return [[<html>
         }
       },
       autolink: {
-        match: /^<([^: >]+:\/[^ >]+)>/,
+        match: /^<([^: >]+:\/\/+[^ >]+)>/,
         parse: function(capture) {
           return {
             content: capture[1]
           };
         },
         html: function(node) {
-          return htmlTag("span", node.content, { class: "autolink", href: sanitizeURL(node.content) });
+          return htmlTag("span", node.content, { class: "autolink", href: node.content });
         }
       },
       link: {
@@ -502,7 +510,7 @@ return [[<html>
           };
         },
         html: function(node) {
-          return htmlTag("span", node.content, { class: "link", href: sanitizeURL(node.content) });
+          return htmlTag("span", node.content, { class: "link", href: node.content });
         }
       },
       em: {
@@ -666,31 +674,56 @@ return [[<html>
   <script> // convars script
     var convars = {};
 
+    jQuery.fn.cvarApplyLinkMaxLength = function() {
+      this.each(function() {
+        var link = $(this),
+        url = link.attr("href");
+        if (url.length > convars.bonchat_link_max_length)
+          link.text(url.slice(0, convars.bonchat_link_max_length) + "...");
+        else
+          link.text(url);
+      });
+      return this;
+    }
+
+    jQuery.fn.cvarApplyShowImages = function() {
+      if (convars.bonchat_show_images) {
+        this.removeClass("hidden");
+      } else {
+        this.addClass("hidden");
+      }
+      return this;
+    }
+
+    jQuery.fn.cvarApplyImageMaxHeight = function() {
+      $("img", this).css("max-height", (5 + convars.bonchat_image_max_height) + "rem");
+      return this;
+    }
+
     const cvarCallbacks = {
-      bonchat_msg_max_len: function(val) {
-        entryMaxInput = parseInt(val);
+      // serverside
+      bonchat_msg_max_length: function(val) {
+        convars.bonchat_msg_max_length = parseInt(val); // int
       },
-      bonchat_link_max_len: function(val) {
-        val = parseInt(val);
-        $(".link").each(function() {
-          var link = $(this),
-          url = link.attr("href");
-          if (url.length > val)
-            link.text(url.slice(0, val) + "...");
-          else
-            link.text(url);
-        });
+      bonchat_msg_max_attachments: function(val) {
+        console.log("" + val)
+        convars.bonchat_msg_max_attachments = parseInt(val) // int
+      },
+      // clientside
+      bonchat_auto_dismiss: function(val) {
+        convars.bonchat_auto_dismiss = parseInt(val) == 1; // bool
+      },
+      bonchat_link_max_length: function(val) {
+        convars.bonchat_link_max_length = parseInt(val); // int
+        $(".link").cvarApplyLinkMaxLength();
       },
       bonchat_show_images: function(val) {
-        val = parseInt(val);
-        $(".image-attachment").each(val
-          ? function() {
-            $(this).show().data("link").hide();
-          }
-          : function() {
-            $(this).hide().data("link").show();
-          }
-        );
+        convars.bonchat_show_images = parseInt(val) == 1; // bool
+        $(".image-attachment").cvarApplyShowImages();
+      },
+      bonchat_image_max_height: function(val) {
+        convars.bonchat_image_max_height = parseInt(val); // int
+        $(".image-attachment").cvarApplyImageMaxHeight();
       }
     }
 
@@ -709,7 +742,7 @@ return [[<html>
       }
     }
   </script>
-  <script>
+  <script> // main script
     const body = $("body"),
     chatbox = $("#chatbox"),
     loadBtnWrapper = $("#load-button-wrapper"),
@@ -719,6 +752,7 @@ return [[<html>
     entryInput = $("#entry-input"),
     entryButton = $("#entry-button");
 
+    // strings for elements whose text is updated by js
     const MSG_PUBLIC_CHAT_TEXT = "Send a message in public chat",
     MSG_TEAM_CHAT_TEXT = "Send a message in team chat",
     LOAD_BTN_TEXT = " hidden messages — Click to load",
@@ -726,7 +760,6 @@ return [[<html>
 
     var panelIsOpen = false,
     chatMode = 1, // 1 = public
-    entryMaxInput = 0, // set by bonchat_msg_max_len cvar
     hoverLabelTimeout = null;
 
     function getTimestampText(s) { // H:MM AM/PM
@@ -762,7 +795,7 @@ return [[<html>
         "transition": "initial",
         "opacity": "initial"
       });
-    }
+    };
 
     jQuery.fn.startFadeOut = function(duration, delay) {
       var now = Date.now();
@@ -786,137 +819,239 @@ return [[<html>
           });
         }
       });
-    }
+    };
 
-    function Message() {
-      this.MAX_ATTACHMENTS = 5;
+    // message functions
 
-      this.MSG_WRAPPER = $("<div class='message'>");
+    const DEFAULT_TEXT_COLOR = "#97d3ff";
+
+    /*
+      append text to a message's content
+        str:   the string to use for the text
+        color: the color of the text (optional)
+    */
+    jQuery.fn.appendText = function(str, color) {
+      if (!this.hasClass("message")) return;
+
+      var content = $(".message-content", this);
+
+      content.append(
+        $("<span>")
+          .text(str)
+          .css("color", color || DEFAULT_TEXT_COLOR)
+      );
+
+      return this;
+    };
+
+    /*
+      append markdown text to a message's content
+        str:   the string to use for the text
+        color: the color of the text (optional)
+    */
+    jQuery.fn.appendMarkdown = function(str, color) {
+      if (!this.hasClass("message")) return;
+
+      var content = $(".message-content", this);
+
+      var markdownHTML = outputHTML(nestedParse(str));
+      content.append(
+        $("<span>")
+          .html(markdownHTML)
+          .css("color", color || DEFAULT_TEXT_COLOR)
+      );
+
+      return this;
+    };
+
+    /*
+      append a player name to a message's content
+        name:    the name of the player
+        color:   the color of the player's name (optional)
+        steamID: the steam id to use when showing the player's profile (optional, "NULL" will interpret the player as a bot and won't show a profile)
+    */
+    jQuery.fn.appendPlayer = function(name, color, steamID) {
+      if (!this.hasClass("message")) return;
+
+      var content = $(".message-content", this);
+
+      var elem = $("<span class='player'>")
+        .text(name)
+        .css("color", color || DEFAULT_TEXT_COLOR);
+      
+      if (steamID && steamID != "NULL") elem.on("click", function() { glua.showProfile(steamID) });
+      
+      content.append(elem);
+
+      return this;
+    };
+
+    /*
+      append an image to a message's attachments
+        url:     the link to check the whitelist
+        src:     the image data the img element should use (will use url if not set)
+        cbLoad:  the callback function after the image successfully loads (optional)
+        cbError: the callback function after the image fails to load (optional)
+    */
+    jQuery.fn.appendImage = function(url, cbLoad, cbError) {
+      if (!this.hasClass("message")) return;
+
+      var msgID = this.data("id"),
+      attachID = this.data("attachIDNum"),
+      attachments = $(".message-attachments", this);
+
+      this.data("attachIDNum", ++attachID); // increment attachment id
+
+      var src = url,
+      sep = src.match(/(.*?)([?#].+)/),
+      hostpath = sep ? sep[1] : src,
+      paramhash = sep ? sep[2] : "";
+
+      // fix tenor gif url
+      if ((hostpath.indexOf("https://tenor.com/view/") == 0 || hostpath.indexOf("https://www.tenor.com/view/") == 0) && hostpath.indexOf(".gif") != src.length - 4)
+        src = hostpath + ".gif" + paramhash;
+      
+      var retry,
+      attachment = $("<div class='attachment image-attachment loading' data-id='" + attachID + "'>")
+        .attr("href", url) // used for hover label and opening in browser
+        .appendTo(attachments);
+      
+      if (isWhitelistedURL(url))
+        attachment.append(
+          $("<img>")
+            .on("load", function() { // image loaded
+              $(this).off();
+              var scrolled = isFullyScrolled();
+              attachment
+                .removeClass("loading")
+                .cvarApplyShowImages()
+                .cvarApplyImageMaxHeight();
+              if (scrolled) scrollToBottom();
+              if (cbLoad) cbLoad();
+            })
+            .on("error", function() { // image failed to load
+              if (!retry) {
+                glua.retryAttachment(msgID, attachID, src);
+                retry = true;
+              } else {
+                $(this).off().remove();
+                attachment
+                  .addClass("failed")
+                  .removeClass("loading");
+                if (cbError) cbError();
+              }
+            })
+            .attr("src", src)
+        );
+      else {
+        attachment.addClass("blocked");
+        if (cbError) cbError();
+      }
+      
+      return attachment;
+    };
+
+    jQuery.fn.appendVideo = function(url, cbLoad, cbError) {
+      if (!this.hasClass("message")) return;
+
+
+    };
+
+    function Message(id) {
+      this.MSG_WRAPPER = $("<div class='message' data-id='" + (typeof id == "number" ? id : "") + "'>");
       this.MSG_CONTENT = $("<div class='message-content'>").appendTo(this.MSG_WRAPPER);
       this.MSG_ATTACHMENTS = $("<div class='message-attachments'>").appendTo(this.MSG_WRAPPER);
-      
-      this.textColor = "#97d3ff"; // this is the default text color
+
+      var wrapper = this.MSG_WRAPPER,
+      content = this.MSG_CONTENT,
+      attachments = this.MSG_ATTACHMENTS;
+
+      wrapper
+        .data("id", id)
+        .data("attachIDNum", 0);
 
       this.setTextColor = function(str) {
         if (str) this.textColor = str;
       };
       this.appendText = function(str) {
-        this.MSG_CONTENT.append(
-          $("<span>")
-            .text(str)
-            .css("color", this.textColor)
-        );
+        wrapper.appendText(str, this.textColor);
       };
       this.appendMarkdown = function(str) {
-        var markdownHTML = outputHTML(nestedParse(str));
-        this.MSG_CONTENT.append(
-          $("<span>")
-            .html(markdownHTML)
-            .css("color", this.textColor)
-        );
+        wrapper.appendMarkdown(str, this.textColor);
       };
       this.appendPlayer = function(name, color, steamID) {
-        var elem = $("<span class='player'>")
-          .text(name)
-          .css("color", color || this.textColor);
-        
-        if (steamID && steamID != "NULL") elem.on("click", function() { glua.showProfile(steamID) });
-        
-        this.MSG_CONTENT.append(elem);
+        wrapper.appendPlayer(name, color || this.textColor, steamID);
       };
-      this._loadAttachments = function() {
-        var maxAttachments = this.MAX_ATTACHMENTS,
-        attachments = this.MSG_ATTACHMENTS,
-        links = this.MSG_WRAPPER.find(".link").slice(0, maxAttachments);
-        if (!links.length) return;
-
-        // apply link length convar
-        var linkMaxLen = parseInt(convars.bonchat_link_max_len);
-        links.each(function() {
-          var link = $(this),
-          url = link.attr("href");
-          if (url.length > linkMaxLen)
-            link.text(url.slice(0, linkMaxLen) + "...");
-          else
-            link.text(url);
-        });
-
-        // keep only whitelisted links and remove duplicates
-        var seen = {};
-        links = links.filter(function() {
-          var url = $(this).attr("href");
-          return url && !seen.hasOwnProperty(url) && isWhitelistedURL(url) ? seen[url] = true : false;
-        });
-
-        // load the attachments
-        links.each(function(index) {
-          var link = $(this),
-          url = $(this).attr("href");
-
-          var scrolled = isFullyScrolled();
-
-          // try to load the attachment
-          var attachment = $("<div class='attachment image-attachment'>"),
-          // append first so the order of the attachments doesn't mix up incase they load faster than any before it
-          img = $("<img>")
-            .on("load", function() { // image loaded
-              img.off();
-
-              attachment // setup attachment using the loaded image
-                .append(img.attr({ href: url, alt: url }))
-                .data("link", link);
-              
-              // apply show images convar
-              if (parseInt(convars.bonchat_show_images))
-                link.hide();
-              else
-                attachment.hide();
-
-              attachments.append(attachment);
-              
-              if (scrolled) scrollToBottom();
-            })
-            .on("error", function() { // failed to load image
-              attachment.remove();
-              img.remove();
-            })
-            .attr("src", url);
-        });
+      this.appendImage = function(url) {
+        if (attachments.children().length >= convars.bonchat_msg_max_attachments) return;
+        wrapper.appendImage(url);
       };
-      this._loadEmojis = function() {
-        this.MSG_WRAPPER.find(".pre-emoji").each(function() {
-          var pre = $(this),
-          url = pre.attr("src"),
-          img = $("<img>")
-            .on("load", function() {
-              img.off();
-              // replace it with the loaded image
-              pre.replaceWith(img
-                .addClass("emoji")
-                .attr("alt", pre.text())
-              );
-            })
-            .on("error", function() { img.remove(); })
-            .attr("src", url);
-        });
+      this.appendVideo = function(url) {
+        if (attachments.children().length >= convars.bonchat_msg_max_attachments) return;
+        wrapper.appendVideo(url);
       };
       this.send = function(prependHidden) {
         // set send time
-        this.MSG_WRAPPER.data("sendTime", Date.now());
-
-        // show timestamp
-        if (this.MSG_WRAPPER.hasClass("show-timestamp"))
-          this.MSG_CONTENT.prepend(
-            $("<span class='timestamp'>")
-              .text(getTimestampText(this.MSG_WRAPPER.data("sendTime")))
-          );
+        wrapper.data("sendTime", Date.now());
 
         var scrolled = isFullyScrolled();
 
+        // show dismiss button
+        if (wrapper.hasClass("dismissible"))
+          content.prepend(
+            $("<span class='dismiss-button'>")
+          );
+
+        // show timestamp
+        if (wrapper.hasClass("show-timestamp"))
+          content.prepend(
+            $("<span class='timestamp'>")
+              .text(getTimestampText(wrapper.data("sendTime")))
+          );
+        
+        // load link attachments
+        var seenURLs = {};
+        wrapper.find(".link").each(function() {
+          if (attachments.children().length >= convars.bonchat_msg_max_attachments) return;
+
+          var link = $(this),
+          url = link.attr("href");
+
+          if (seenURLs[url] || !isWhitelistedURL(url)) return;
+          seenURLs[url] = true;
+
+          var attach = wrapper.appendImage(url, function() { // success
+            var scrolled = isFullyScrolled();
+            link.remove();
+            attach.show();
+            if (scrolled) scrollToBottom();
+          }, function() { // failed
+            attach.remove();
+          }).hide();
+        });
+        
+        // load emojis
+        wrapper.find(".pre-emoji").each(function() {
+          var pre = $(this),
+          url = pre.attr("src"),
+          img = $("<img class='emoji'>")
+            .on("load", function() {
+              img.off();
+              // replace it with the loaded image
+              pre.replaceWith(img.attr("alt", pre.text()));
+            })
+            .on("error", function() {
+              img.off().remove();
+            })
+            .attr("src", url);
+        });
+
+        wrapper.find(".link").cvarApplyLinkMaxLength();
+
         if (prependHidden)
-          this.MSG_WRAPPER.prependTo(msgContainer); // prepend the hidden message
+          wrapper.prependTo(msgContainer); // prepend the hidden message
         else
-          this.MSG_WRAPPER.appendTo(msgContainer); // append the new message
+          wrapper.appendTo(msgContainer); // append the new message
 
         // remove oldest message if exceeding 100 total
         if (!prependHidden) {
@@ -926,31 +1061,17 @@ return [[<html>
 
         if (scrolled || !panelIsOpen) scrollToBottom();
 
-        // load attachments
-        this._loadAttachments();
-
-        // load emojis
-        this._loadEmojis();
-
-        if (!panelIsOpen) this.MSG_WRAPPER.startFadeOut(3000, 10000); // start fade out animation
-
-        // update max messages convar changes
-        //applyConVarChanges("bonchat_max_msgs");
+        if (!panelIsOpen) wrapper.startFadeOut(3000, 10000); // start fade out animation
       }
     };
 
-    /*function checkImageContent(src, success, fail) {
-      var img = $("<img>")
-        .on("load", function() {
-          img.remove();
-          success();
-        })
-        .on("error", function() {
-          img.remove();
-          fail();
-        })
-        .attr("src", src);
-    }*/
+    function getMessageByID(id) {
+      return $(".message[data-id='" + id + "']", msgContainer);
+    }
+
+    function getAttachmentByID(id, msg) {
+      return $(".attachment[data-id='" + id + "']", msg);
+    }
 
     function getUTF8ByteLength(str) {
       var s = str.length;
@@ -972,12 +1093,15 @@ return [[<html>
     function insertText(text) {
       text = text.replace(/[\u000a\u000d\u2028\u2029\u0009]/g, ""); // prevent new lines and tab spaces
       var len = text.length,
-      maxLen = entryMaxInput - getUTF8ByteLength(getText()) + getUTF8ByteLength(document.getSelection().toString());
+      maxLen = convars.bonchat_msg_max_length - getUTF8ByteLength(getText()) + getUTF8ByteLength(document.getSelection().toString());
       if (len > maxLen) {
         text = text.substring(0, maxLen); // make sure it won't exceed the char limit
         glua.playSound("resource/warning.wav");
       }
-      if (text) document.execCommand("insertText", false, text);
+      if (text) {
+        document.execCommand("insertText", false, text);
+        entryInput.scrollLeft(entryInput.get(0).scrollWidth);
+      }
     }
 
     function updateLoadBtn(total) {
@@ -1004,6 +1128,20 @@ return [[<html>
       }, 1000);
     }
 
+    function dismissMessages() {
+      $(".dismiss-button").each(function() {
+        glua.dismissMessage($(this).parents(".message").data("id"));
+      });
+    }
+
+    function restartImageAnims() {
+      $(".image-attachment img").each(function() {
+        var elem = $(this),
+        src = elem.attr("src");
+        elem.attr("src", "").attr("src", src);
+      });
+    }
+
     function applyChatMode(mode) {
       chatMode = mode;
       entryInput.attr("placeholder", mode == 1 ? MSG_PUBLIC_CHAT_TEXT : MSG_TEAM_CHAT_TEXT);
@@ -1014,7 +1152,7 @@ return [[<html>
       loadBtn
         .addClass("loading")
         .text(LOAD_BTN_LOADING_TEXT);
-      glua.prependHidden(msgContainer.children().length);
+      glua.prependHiddenMessages(msgContainer.children().length);
     });
 
     entryButton.on("click", function() {
@@ -1036,7 +1174,7 @@ return [[<html>
       })
       .on("keypress", function(e) {
         // prevent registering certain keys and exceeding the char limit
-        if (getUTF8ByteLength(getText() + String.fromCharCode(e.which)) > entryMaxInput) {
+        if (getUTF8ByteLength(getText() + String.fromCharCode(e.which)) > convars.bonchat_msg_max_length) {
           glua.playSound("resource/warning.wav");
           return false;
         }
@@ -1075,40 +1213,46 @@ return [[<html>
 
     $(document)
       .on("click", function(e) {
-        var elem = $(e.target),
-        url = elem.attr("href") || elem.parents().attr("href");
+        var elem = $(e.target);
+        if (!$(e.target).closest(chatbox).length) return; // only the chatbox and its children
 
         switch (true) {
-          case url != undefined: // check if clicking would've caused a redirect
+          case elem.hasClass("emoji"): // clicked on an emoji
+            entryInput.focus();
+            insertText(elem.attr("alt") + " "); // paste the emoji into the entry
+            break;
+          case elem.hasClass("dismiss-button"): // clicked on a msg dismiss button
+            glua.dismissMessage(elem.parents(".message").data("id"));
+            break;
+          case elem.closest("[href!=''][href]").length != 0: // clicked on an element with a src or href or parent with href
             // open the image or page with Glua
-            if (elem.is("img"))
-              glua.openImage(url,
+            if (elem.is("img") && elem.parent(".image-attachment").length)
+              glua.openImage(
+                elem.parent().attr("href"),
+                elem.attr("src"),
                 elem.prop("naturalWidth"),
                 elem.prop("naturalHeight"),
                 elem.prop("width"),
                 elem.prop("height")
               );
             else
-              glua.openPage(url);
-            break;
-          case elem.hasClass("emoji"): // check if clicked on an emoji
-            entryInput.focus();
-            insertText(elem.attr("alt") + " "); // paste the emoji into the entry
+              glua.openPage(elem.closest("[href!=''][href]").attr("href"), elem.is(".hidden"));
             break;
         }
 
         if (!entryInput.is(":focus")) glua.isTyping(false); // update is typing status
       })
       .on("mouseover", function(e) {
-        var elem = $(e.target);
+        var elem = $(e.target),
+        url = elem.closest("[href!=''][href]").attr("href");
 
         // show hover label
-        if (elem.is(entryButton)) { // entry button text
+        if (elem.is(entryButton)) { // is hovering over the entry button
           startHoverLabel("Send a message in " + (chatMode == 1 ? "public" : "team") + " chat");
-        } else if (elem.is(".emoji")) { // emoji text
+        } else if (elem.is(".emoji")) { // is hovering over an emoji
           startHoverLabel(elem.attr("alt"));
-        } else if (elem.attr("href") || elem.parents().attr("href")) { // href text
-          startHoverLabel(elem.attr("href") || elem.parents().attr("href"));
+        } else if (url) { // is hovering over an element with an href
+          startHoverLabel(url);
         }
       })
       .on("mouseout", function() {
@@ -1124,11 +1268,13 @@ return [[<html>
       applyChatMode(mode); // set chat mode (public/team)
       body.removeClass("panel-closed"); // unhide the elements hidden when the panel was closed
       msgContainer.children().resetFadeOut(); // unfade the messages
+      restartImageAnims(); // restart the animation of gif image attachments
       entryInput.focus(); // focus so the user can type in it
     }
 
     function PANEL_CLOSE(totalMsgs) {
       panelIsOpen = false;
+      if (convars.bonchat_auto_dismiss) dismissMessages(); // auto dismiss messages
       resetLoadBtn(totalMsgs); // clears any hidden messages loaded with the load button
       body.addClass("panel-closed"); // hide some elements when the panel is closed
       scrollToBottom(); // reset scroll

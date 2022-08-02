@@ -1,4 +1,4 @@
--- custom game messages for BonChat (connecting, joining, leaving, name change, cvar change, achievement get, player chat)
+-- custom game messages for BonChat (connecting, joining, leaving, name change, cvar change, achievement get)
 -- you can remove or modify this script to your liking
 
 if SERVER then
@@ -156,10 +156,9 @@ hook.Add("OnAchievementAchieved", "BonChat_AchieveMessages", function(ply, achid
   BonChat.SuppressDefaultMsg()
 end)
 
-local color_dead = Color(255, 0, 0) -- *DEAD*
-local color_team = Color(24, 162, 35) -- (TEAM)
+local color_dead, color_team = Color(255, 0, 0), Color(24, 162, 35)
 
--- player chat messages
+-- player messages
 hook.Add("OnPlayerChat", "BonChat_PlayerMessages", function(ply, text, teamChat, isDead)
   local msg = BonChat.Message()
   msg:SetSender(ply)
@@ -181,8 +180,9 @@ hook.Add("OnPlayerChat", "BonChat_PlayerMessages", function(ply, text, teamChat,
   msg:AppendColor(color_white)
   msg:AppendText(": ")
   msg:AppendMarkdown(text)
+  msg:SetAttachments(BonChat.GetLastPlayerChat().attachments)
   BonChat.SendMessage(msg)
-  
+
   -- prevent default so we don't get duplicates
   BonChat.SuppressDefaultMsg()
 end)

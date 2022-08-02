@@ -1,4 +1,10 @@
 include("bonchat/message.lua")
+include("bonchat/vgui/dhtml.lua")
+include("bonchat/vgui/browser.lua")
+include("bonchat/vgui/chatbox.lua")
+include("bonchat/vgui/settings.lua")
+include("bonchat/vgui/emojis.lua")
+include("bonchat/vgui/attachments.lua")
 include("bonchat/vgui/frame.lua")
 
 -- cvars
@@ -39,15 +45,18 @@ local function addJSConVar(cvar)
 end
 
 -- js convars
-addJSConVar(BonChat.CVAR.MSG_MAX_LEN)
-addJSConVar(BonChat.CVAR.LINK_MAX_LEN)
+addJSConVar(BonChat.CVAR.MSG_MAX_LENGTH)
+addJSConVar(BonChat.CVAR.MSG_MAX_ATTACHS)
+addJSConVar(BonChat.CVAR.AUTO_DISMISS)
+addJSConVar(BonChat.CVAR.LINK_MAX_LENGTH)
 addJSConVar(BonChat.CVAR.SHOW_IMGS)
+addJSConVar(BonChat.CVAR.IMG_MAX_HEIGHT)
 
-local function sendInfoMessage(str)
+function BonChat.SendInfoMessage(str)
   local msg = BonChat.Message()
+  msg:SetDismissible()
   msg:SetCentered()
   msg:SetUnselectable()
-  msg:SetUntouchable()
   msg:AppendColor(color_white)
   msg:AppendMarkdown(str)
   BonChat.SendMessage(msg)
@@ -62,8 +71,15 @@ function BonChat.LogError(err, reason)
   BonChat.Log(err, Color(180, 180, 180), reason and (" (" .. reason .. ")") or "")
 end
 
+local sentBranchWarning
+
 function BonChat.OpenChat(mode)
   chat.Open(mode)
+  if not sentBranchWarning and BRANCH == "unknown" then
+    BonChat.SendInfoMessage(":i:error: **You are not using the x86-64 branch, so &ff0000&you may encounter bugs!**")
+    BonChat.SendInfoMessage(":i:error: **If you prefer the default chatbox, you can type in console: &00ff00&bonchat_enable 0**")
+    sentBranchWarning = true
+  end
 end
 
 function BonChat.CloseChat()
@@ -78,26 +94,40 @@ end
 
 function BonChat.ClearChat()
   if not IsValid(BonChat.frame) then return end
+  -- empty chatbox html
   BonChat.frame.chatbox:CallJS("msgContainer.empty(); loadBtnWrapper.hide();")
+  -- reset chatbox values
   BonChat.frame.chatbox.msgs = {}
+  BonChat.frame.chatbox.msgsLookup = {}
+  BonChat.frame.chatbox.msgIDNum = 0
+  BonChat.frame.chatbox.newMsgs = 0
 end
 
 function BonChat.Say(text, mode)
   if BonChat.lastMsgTime and CurTime() - BonChat.lastMsgTime < BonChat.CVAR.GetMsgCooldown() then
     if not BonChat.sentWaitMsg then
       local wait = math.Round(BonChat.CVAR.GetMsgCooldown() - (CurTime() - BonChat.lastMsgTime), 3)
-      sendInfoMessage(":i:error: **You must wait " .. wait .. " second" .. (wait ~= 1 and "s" or "") .. " before sending another message!**")
+      BonChat.SendInfoMessage(":i:error: **You must wait " .. wait .. " second" .. (wait ~= 1 and "s" or "") .. " before sending another message!**")
       BonChat.sentWaitMsg = true
     end
     return
   end
 
-  text = string.Left(text or "", BonChat.CVAR.GetMsgMaxLen())
+  text = string.Left(text or "", BonChat.CVAR.GetMsgMaxLength())
   if #text == 0 then return end
 
+  local attachments = BonChat.frame.attachments:GetAttachments()
+
   net.Start("bonchat_say")
-    net.WriteString(text)
-    net.WriteBool(mode and mode ~= 1 or BonChat.chatMode ~= 1)
+  net.WriteString(text)
+  net.WriteBool(mode and mode ~= 1 or BonChat.chatMode ~= 1)
+  net.WriteUInt(#attachments, 4)
+  for i = 1, #attachments do
+    local attachment = attachments[i]
+    net.WriteUInt(attachment.type, 4)
+    net.WriteString(attachment.value)
+  end
+  BonChat.frame.attachments:ClearAttachments()
   net.SendToServer()
 
   BonChat.lastMsgTime = CurTime()
@@ -117,7 +147,8 @@ function BonChat.SetText(text)
 end
 
 function BonChat.InsertText(text)
-  BonChat.frame.chatbox:CallJSParams("entryInput.focus(); insertText('%s');", string.JavascriptSafe(text))
+  BonChat.FocusChatInput()
+  BonChat.frame.chatbox:CallJSParams("entryInput.focus(); insertText('%s')", string.JavascriptSafe(text))
 end
 
 function BonChat.OpenURL(url)
@@ -134,17 +165,96 @@ function BonChat.OpenURL(url)
   gui.OpenURL(url)
 end
 
-function BonChat.OpenPage(url)
-  if BRANCH == "unknown" then return BonChat.OpenURL(url) end
+function BonChat.OpenPage(url, safe)
+  if safe or BRANCH == "unknown" then return BonChat.OpenURL(url) end
   BonChat.frame.browser:OpenPage(url)
 end
 
-function BonChat.OpenImage(url, w, h, minW, minH)
-  BonChat.frame.browser:OpenImage(url, w, h, minW, minH)
+function BonChat.OpenImage(title, url, w, h, minW, minH)
+  BonChat.frame.browser:OpenImage(title, url, w, h, minW, minH)
+end
+
+local imagePasteCache = {}
+
+function BonChat.PasteImage(data)
+  if not BonChat.frame.attachments:IsVisible() then
+    BonChat.frame:HideAllSubPanels()
+    BonChat.frame.attachments.btn.DoClick()
+  end
+
+  local function logFetchError(reason)
+    BonChat.LogError("Failed to load image paste", reason)
+  end
+
+  local link = imagePasteCache[data]
+  if link then -- check if we already requested for this
+    BonChat.AddAttachment(link)
+  else -- upload the image to Imgur and receive a link for it
+    HTTP({
+      url = "https://api.imgur.com/3/image.json?client_id=546c25a59c58ad7",
+      method = "post",
+      type = "application/json",
+      parameters = {
+        image = data,
+        type = "base64"
+      },
+      success = function(code, body)
+        if code == 200 then
+          local result = util.JSONToTable(body)
+          if result.success then
+            local link = result.data.link
+            imagePasteCache[data] = link
+            BonChat.AddAttachment(link)
+          else
+            logFetchError("Request was unsuccessful")
+          end
+        else
+          logFetchError(code)
+        end
+      end,
+      failed = function(reason)
+        logFetchError(reason)
+      end
+    })
+  end
 end
 
 function BonChat.GetResource(name)
   return include("bonchat/resources/" .. name .. ".lua")
+end
+
+local attachmentLoadCache = {}
+
+function BonChat.LoadAttachment(url, success, fail)
+  success = success or function() end
+  fail = fail or function() end
+
+  local data = attachmentLoadCache[url]
+  if data then -- check if we already requested for this
+    success(data)
+  else -- attempt to fetch the data
+    HTTP({
+      url = url,
+      method = "get",
+      success = function(code, body, headers)
+        if code == 200 then
+          local imageType = string.match(headers["Content-Type"], "^(image/[%w.+-]+)")
+          if imageType then
+            local data = "data:" .. imageType .. ";base64, " .. util.Base64Encode(body, true)
+            attachmentLoadCache[url] = data
+            success(data)
+            return
+          end
+        end
+        fail()
+      end,
+      failed = fail
+    })
+  end
+end
+
+function BonChat.AddAttachment(str)
+  BonChat.frame.attachments:AddAttachment(str)
 end
 
 local function hideDefaultChat(name)
@@ -186,7 +296,7 @@ end
 function BonChat.InitChat()
   BonChat.ReloadChat()
 
-  sendInfoMessage(":i:tick: **BonChat has successfully loaded**")
+  BonChat.SendInfoMessage(":i:tick: **BonChat has successfully loaded**")
 
   if BonChat.enabled then
     BonChat.EnableChat()
@@ -250,11 +360,15 @@ end
 
 -- concommands
 
+concommand.Add("bonchat_say", function(_, _, _, argStr) BonChat.Say(argStr, 1) end)
+
+concommand.Add("bonchat_say_team", function(_, _, _, argStr) BonChat.Say(argStr, 2) end)
+
 concommand.Add("bonchat_reload", function()
   BonChat.CloseChat()
   BonChat.ReloadChat()
 
-  sendInfoMessage(":i:cog: **Chatbox was reloaded**")
+  BonChat.SendInfoMessage(":i:cog: **Chatbox was reloaded**")
 
   if BonChat.enabled then
     BonChat.EnableChat()
@@ -265,8 +379,12 @@ end)
 
 concommand.Add("bonchat_clear", function()
   BonChat.ClearChat()
-  sendInfoMessage(":i:bin: **Chatbox was cleared**")
+  BonChat.SendInfoMessage(":i:bin: **Chatbox was cleared**")
 end)
+
+function BonChat.GetLastPlayerChat()
+  return BonChat.lastPlayerChat or {}
+end
 
 -- player sent a message through the chatbox
 net.Receive("bonchat_say", function()
@@ -274,8 +392,16 @@ net.Receive("bonchat_say", function()
   local text = net.ReadString()
   local teamChat = net.ReadBool()
   local isDead = net.ReadBool()
+  local totalAttachs = net.ReadUInt(4)
+  local attachments = {}
+  for i = 1, totalAttachs do
+    local type, value = net.ReadUInt(4), net.ReadString()
+    table.insert(attachments, { type = type, value = value })
+  end
 
+  BonChat.lastPlayerChat = { ply = ply, text = text, teamChat = teamChat, isDead = isDead, attachments = attachments }
   hook.Run("OnPlayerChat", ply, text, teamChat, isDead)
+  BonChat.lastPlayerChat = {}
 end)
 
 -- player is typing in the chatbox

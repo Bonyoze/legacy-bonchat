@@ -1,5 +1,3 @@
-include("bonchat/vgui/dhtml.lua")
-
 local steamActiveReqs, steamQueryCache, steamQueryTotals = 0, {}, {}
 local steamReqCooldown, steamMaxReqs = 60, 10
 
@@ -31,12 +29,15 @@ local PANEL = {
     self.dhtml = self:Add("BonChat_DHTML")
     self.dhtml:Dock(FILL)
 
+    self.dhtml:AddFunc("playSound", surface.PlaySound)
+    --self.dhtml:AddFunc("setClipboardText", SetClipboardText)
+
     self.dhtml:AddFunc("showHoverLabel", BonChat.ShowHoverLabel)
     self.dhtml:AddFunc("hideHoverLabel", BonChat.HideHoverLabel)
     self.dhtml:AddFunc("insertText", BonChat.InsertText)
+
     self.dhtml:AddFunc("searchEmojis", function(query) self:SearchEmojis(query) end)
     self.dhtml:AddFunc("loadPage", function(id) self:LoadPage(id) end)
-    --self.dhtml:AddFunc("setClipboardText", SetClipboardText)
 
     self.dhtml:SetHTML(BonChat.GetResource("emojis.html"))
 
@@ -237,16 +238,16 @@ local PANEL = {
     objCategory.lastSearch = CurTime()
 
     function objCategory.SetTitle(self, title)
-      dhtml:CallJSParams("categories['%s'].setTitle('%s')", string.JavascriptSafe(self.id), string.JavascriptSafe(title))
+      dhtml:CallJSParams("getCategoryByID('%s').setTitle('%s')", string.JavascriptSafe(self.id), string.JavascriptSafe(title))
     end
 
     function objCategory.AppendPage(self, data, last)
-      dhtml:CallJSParams("categories['%s'].appendPage(JSON.parse('%s'), %d)", string.JavascriptSafe(self.id), string.JavascriptSafe(util.TableToJSON(data)), last and 1 or 0)
+      dhtml:CallJSParams("getCategoryByID('%s').appendPage(JSON.parse('%s'), %d)", string.JavascriptSafe(self.id), string.JavascriptSafe(util.TableToJSON(data)), last and 1 or 0)
       self.pageNum = self.pageNum + 1
     end
 
     function objCategory.ClearPages(self)
-      dhtml:CallJSParams("categories['%s'].clearPages()", string.JavascriptSafe(self.id))
+      dhtml:CallJSParams("getCategoryByID('%s').clearPages()", string.JavascriptSafe(self.id))
     end
 
     function objCategory.QuerySearch()
@@ -256,7 +257,7 @@ local PANEL = {
       if not self.lastQuery then return end
 
       -- append loading label
-      dhtml:CallJSParams("categories['%s'].appendLoadBtn(LOADING_LABEL_TEXT, 1)", self.id)
+      dhtml:CallJSParams("getCategoryByID('%s').appendLoadBtn(LOADING_LABEL_TEXT, 1)", self.id)
       
       local currSearch = self.lastSearch
 

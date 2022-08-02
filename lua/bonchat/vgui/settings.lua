@@ -29,12 +29,17 @@ local PANEL = {
     local cvarMaxMsgs = GetConVar(BonChat.CVAR.MAX_MSGS)
     self:AddSlider("Max Messages", BonChat.CVAR.MAX_MSGS, cvarMaxMsgs:GetInt(), cvarMaxMsgs:GetMin(), cvarMaxMsgs:GetMax(), 0)
     -- link length slider
-    local cvarLinkLen = GetConVar(BonChat.CVAR.LINK_MAX_LEN)
-    self:AddSlider("Max Link Length", BonChat.CVAR.LINK_MAX_LEN, cvarLinkLen:GetInt(), cvarLinkLen:GetMin(), cvarLinkLen:GetMax(), 0)
+    local cvarLinkLength = GetConVar(BonChat.CVAR.LINK_MAX_LENGTH)
+    self:AddSlider("Max Link Length", BonChat.CVAR.LINK_MAX_LENGTH, cvarLinkLength:GetInt(), cvarLinkLength:GetMin(), cvarLinkLength:GetMax(), 0)
     -- chat tick toggle
     self:AddCheckbox("Play chat sound", BonChat.CVAR.CHAT_TICK, BonChat.CVAR.GetChatTick())
+    -- auto dismiss toggle
+    self:AddCheckbox("Auto dismiss messages", BonChat.CVAR.AUTO_DISMISS, BonChat.CVAR.GetAutoDismiss())
     -- image embeds toggle
     self:AddCheckbox("Show image attachments", BonChat.CVAR.SHOW_IMGS, BonChat.CVAR.GetShowImages())
+    -- image height slider
+    local cvarImageHeight = GetConVar(BonChat.CVAR.IMG_MAX_HEIGHT)
+    self:AddSlider("Max Image Height", BonChat.CVAR.IMG_MAX_HEIGHT, cvarImageHeight:GetInt(), cvarImageHeight:GetMin(), cvarImageHeight:GetMax(), 0)
     -- skin tone emojis toggle
     self:AddCheckbox("Show results for skin tone emojis", BonChat.CVAR.SHOW_TONE_EMOJIS, BonChat.CVAR.GetShowToneEmojis())
   end,

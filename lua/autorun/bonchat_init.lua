@@ -5,30 +5,40 @@ BonChat = BonChat or {}
 BonChat.CVAR = {}
 
 -- server cvars
-BonChat.CVAR.MSG_MAX_LEN = "bonchat_msg_max_len"
+BonChat.CVAR.MSG_MAX_LENGTH = "bonchat_msg_max_length"
+BonChat.CVAR.MSG_MAX_ATTACHS = "bonchat_msg_max_attachments"
 BonChat.CVAR.MSG_COOLDOWN = "bonchat_msg_cooldown"
 
 -- client cvars
 BonChat.CVAR.ENABLED = "bonchat_enable"
 BonChat.CVAR.CHAT_TICK = "bonchat_chat_tick"
-BonChat.CVAR.MAX_MSGS = "bonchat_max_msgs"
-BonChat.CVAR.LINK_MAX_LEN = "bonchat_link_max_len"
+BonChat.CVAR.MAX_MSGS = "bonchat_max_messages"
+BonChat.CVAR.AUTO_DISMISS = "bonchat_auto_dismiss"
+BonChat.CVAR.LINK_MAX_LENGTH = "bonchat_link_max_length"
 BonChat.CVAR.SHOW_IMGS = "bonchat_show_images"
+BonChat.CVAR.IMG_MAX_HEIGHT = "bonchat_image_max_height"
 BonChat.CVAR.SHOW_TONE_EMOJIS = "bonchat_show_tone_emojis"
 
 
-CreateConVar(BonChat.CVAR.MSG_MAX_LEN, 1000, { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED }, "Set the character limit of messages", 256, 3000)
+CreateConVar(BonChat.CVAR.MSG_MAX_LENGTH, 1000, { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED }, "Set the character limit of messages", 256, 3000)
+CreateConVar(BonChat.CVAR.MSG_MAX_ATTACHS, 5, { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED }, "Set the attachment limit of messages", 0, 15)
 CreateConVar(BonChat.CVAR.MSG_COOLDOWN, 0.75, { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED }, "Set the message send cooldown in seconds", 0.1, 60)
 
 CreateClientConVar(BonChat.CVAR.ENABLED, 1, true, nil, "Enable or disable BonChat")
 CreateClientConVar(BonChat.CVAR.CHAT_TICK, 1, true, nil, "Play the chat \"tick\" sound when a player sends a message")
 CreateClientConVar(BonChat.CVAR.MAX_MSGS, 1000, true, nil, "Set the max amount of messages that can be loaded in the chatbox", 100, 1000)
-CreateClientConVar(BonChat.CVAR.LINK_MAX_LEN, 25, true, nil, "Set the character limit of links", 8, 256)
+CreateClientConVar(BonChat.CVAR.AUTO_DISMISS, 1, true, nil, "Automatically dismiss messages upon closing the chatbox")
+CreateClientConVar(BonChat.CVAR.LINK_MAX_LENGTH, 64, true, nil, "Set the character limit of links", 8, 256)
 CreateClientConVar(BonChat.CVAR.SHOW_IMGS, 1, true, nil, "Show image attachments")
+CreateClientConVar(BonChat.CVAR.IMG_MAX_HEIGHT, 1, true, nil, "Set the max height for image attachments", 1, 10)
 CreateClientConVar(BonChat.CVAR.SHOW_TONE_EMOJIS, 0, true, nil, "Show results for skin tone emojis when searching in the catalog")
 
-function BonChat.CVAR.GetMsgMaxLen()
-  return GetConVar(BonChat.CVAR.MSG_MAX_LEN):GetInt()
+function BonChat.CVAR.GetMsgMaxLength()
+  return GetConVar(BonChat.CVAR.MSG_MAX_LENGTH):GetInt()
+end
+
+function BonChat.CVAR.GetMsgMaxAttachs()
+  return GetConVar(BonChat.CVAR.MSG_MAX_ATTACHS):GetInt()
 end
 
 function BonChat.CVAR.GetMsgCooldown()
@@ -47,12 +57,20 @@ function BonChat.CVAR.GetMaxMsgs()
   return GetConVar(BonChat.CVAR.MAX_MSGS):GetInt()
 end
 
-function BonChat.CVAR.GetLinkMaxLen()
-  return GetConVar(BonChat.CVAR.LINK_MAX_LEN):GetInt()
+function BonChat.CVAR.GetAutoDismiss()
+  return GetConVar(BonChat.CVAR.AUTO_DISMISS):GetBool()
+end
+
+function BonChat.CVAR.GetLinkMaxLength()
+  return GetConVar(BonChat.CVAR.LINK_MAX_LENGTH):GetInt()
 end
 
 function BonChat.CVAR.GetShowImages()
   return GetConVar(BonChat.CVAR.SHOW_IMGS):GetBool()
+end
+
+function BonChat.CVAR.GetImageMaxHeight()
+  return GetConVar(BonChat.CVAR.IMG_MAX_HEIGHT):GetInt()
 end
 
 function BonChat.CVAR.GetShowToneEmojis()

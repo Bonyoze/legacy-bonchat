@@ -1,5 +1,3 @@
-include("bonchat/vgui/dhtml.lua")
-
 local function fixDimensions(w, h)
   -- consider frame space
   w = w + 10
@@ -50,10 +48,10 @@ local PANEL = {
   end,
   OpenPage = function(self, url)
     self:SetTitle(url)
-    self:SetSize(ScrW() * 0.9, ScrH() * 0.9)
-    self:SetPos(ScrW() * 0.5 - self:GetWide() * 0.5, ScrH() * 0.5 - self:GetTall() * 0.5)
-    self:SetMinWidth(ScrW() * 0.1)
-    self:SetMinHeight(ScrH() * 0.1)
+    self:SetSize(ScrW() / 2, ScrH() / 2)
+    self:SetPos(ScrW() / 4, ScrH() / 4)
+    self:SetMinWidth(ScrW() / 8)
+    self:SetMinHeight(ScrH() / 8)
 
     self.dhtml:OpenURL(url)
 
@@ -63,11 +61,11 @@ local PANEL = {
     self.dhtml:SetKeyboardInputEnabled(true)
     self.dhtml:SetMouseInputEnabled(true)
   end,
-  OpenImage = function(self, url, w, h, minW, minH)
+  OpenImage = function(self, title, url, w, h, minW, minH)
     w, h = fixDimensions(w, h)
     minW, minH = fixDimensions(minW, minH)
 
-    self:SetTitle(url)
+    self:SetTitle(title)
     self:SetSize(w, h)
     self:SetPos(ScrW() / 2 - w / 2, ScrH() / 2 - h / 2)
     self:SetMinWidth(minW)
