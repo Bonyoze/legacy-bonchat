@@ -20,7 +20,7 @@ Should work on any branch, but intended for usage on `x86-64`
   - ✅ frame
   - ✅ chatbox
   - ✅ browser
-  - ➖ settings
+  - ➖ settings panel
     - ➖ url whitelist editing
     - ❌ max message render height
     - ❌ hiding images/videos
@@ -30,6 +30,16 @@ Should work on any branch, but intended for usage on `x86-64`
     - ✅ Twemoji
     - ✅ Silkicon
     - ✅ Steam
+  - ➖ attachments panel
+    - ✅ images
+    - ❌ videos
+    - ❌ audio
+    - ❌ models
+    - ❌ textures
+    - ❌ sound files
+  - ❌ chat room panel
+    - ❌ room creating/joining/leaving
+    - ❌ room private messaging
   - ❌ message context popup
 - ➖ message sending
   - ✅ inline markdown support
@@ -38,17 +48,15 @@ Should work on any branch, but intended for usage on `x86-64`
     - ✅ Silkicon
     - ✅ Steam
     - ✅ Discord
-  - ➖ attachment embedding
+  - ➖ media file attachments
     - ✅ images
     - ➖ videos
     - ➖ audio
-    - ❌ links
-  - ❌ game attachments (some might not be implemented due to complexity)
-    - ❌ model
-    - ❌ texture
-    - ❌ sound file
+  - ❌ game asset attachments (some might not be implemented due to complexity)
+    - ❌ models
+    - ❌ textures
+    - ❌ sound files
   - ❌ chatbox input markdown
-  - ➖ modular api
 
 ---
 
