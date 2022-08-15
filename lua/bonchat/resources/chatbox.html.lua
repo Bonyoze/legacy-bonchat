@@ -298,6 +298,8 @@ return [[<html>
       "tenor.com",
       // Facepunch
       "files.facepunch.com",
+      // Github
+      "user-images.githubusercontent.com",
       // Reddit
       "i.redd.it",
       "preview.redd.it"
@@ -706,7 +708,6 @@ return [[<html>
         convars.bonchat_msg_max_length = parseInt(val); // int
       },
       bonchat_msg_max_attachments: function(val) {
-        console.log("" + val)
         convars.bonchat_msg_max_attachments = parseInt(val) // int
       },
       // clientside

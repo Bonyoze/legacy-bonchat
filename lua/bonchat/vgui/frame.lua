@@ -8,6 +8,7 @@ local PANEL = {
     self:ShowCloseButton(false)
     self:SetSizable(true)
     self:SetScreenLock(true)
+    self.lblTitle:SetColor(color_white)
 
     -- paint function used when the chat is open
     self.openPaint = function(self, w, h)
@@ -68,6 +69,7 @@ local PANEL = {
 
     pnl:ShowCloseButton(false)
     pnl:SetDraggable(false)
+    pnl.lblTitle:SetColor(color_white)
     pnl.OnCursorExited = function(self) BonChat.HideHoverLabel() end
 
     pnl.btn:SetSize(20, 20)

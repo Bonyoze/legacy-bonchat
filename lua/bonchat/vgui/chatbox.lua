@@ -85,7 +85,7 @@ local PANEL = {
         ply:ShowProfile()
       else
         -- fallback method if we can't get the player entity
-        gui.OpenURL("https://steamcommunity.com/id/" .. util.SteamIDTo64(steamID))
+        gui.OpenURL("https://steamcommunity.com/profiles/" .. util.SteamIDTo64(steamID))
       end
     end)
     self:AddFunc("retryAttachment", function(msgID, attachID, src)

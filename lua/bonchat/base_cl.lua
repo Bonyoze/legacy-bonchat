@@ -75,7 +75,7 @@ local sentBranchWarning
 
 function BonChat.OpenChat(mode)
   chat.Open(mode)
-  if not sentBranchWarning and BRANCH == "unknown" then
+  if not sentBranchWarning and BRANCH ~= "x86-64" then
     BonChat.SendInfoMessage(":i:error: **You are not using the x86-64 branch, so &ff0000&you may encounter bugs!**")
     BonChat.SendInfoMessage(":i:error: **If you prefer the default chatbox, you can type in console: &00ff00&bonchat_enable 0**")
     sentBranchWarning = true
@@ -113,19 +113,26 @@ function BonChat.Say(text, mode)
     return
   end
 
-  text = string.Left(text or "", BonChat.CVAR.GetMsgMaxLength())
-  if #text == 0 then return end
-
   local attachments = BonChat.frame.attachments:GetAttachments()
+  local totalAttachs = #attachments
+
+  text = string.Left(text or "", BonChat.CVAR.GetMsgMaxLength())
+  if #text == 0 then
+    if totalAttachs > 0 then
+      text = "(" .. totalAttachs .. " attachment" .. (totalAttachs > 1 and "s" or "") .. ")"
+    else
+      return
+    end
+  end
 
   net.Start("bonchat_say")
   net.WriteString(text)
   net.WriteBool(mode and mode ~= 1 or BonChat.chatMode ~= 1)
-  net.WriteUInt(#attachments, 4)
-  for i = 1, #attachments do
-    local attachment = attachments[i]
-    net.WriteUInt(attachment.type, 4)
-    net.WriteString(attachment.value)
+  net.WriteUInt(totalAttachs, 4)
+  for i = 1, totalAttachs do
+    local attach = attachments[i]
+    net.WriteUInt(attach.type, 4)
+    net.WriteString(attach.value)
   end
   BonChat.frame.attachments:ClearAttachments()
   net.SendToServer()
@@ -147,7 +154,6 @@ function BonChat.SetText(text)
 end
 
 function BonChat.InsertText(text)
-  BonChat.FocusChatInput()
   BonChat.frame.chatbox:CallJSParams("entryInput.focus(); insertText('%s')", string.JavascriptSafe(text))
 end
 
@@ -166,7 +172,7 @@ function BonChat.OpenURL(url)
 end
 
 function BonChat.OpenPage(url, safe)
-  if safe or BRANCH == "unknown" then return BonChat.OpenURL(url) end
+  if safe or BRANCH ~= "x86-64" then return BonChat.OpenURL(url) end
   BonChat.frame.browser:OpenPage(url)
 end
 

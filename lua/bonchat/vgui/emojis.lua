@@ -17,7 +17,7 @@ end
 
 local PANEL = {
   Init = function(self)
-    self:SetTitle("Emoji Catalog")
+    self:SetTitle("Emojis")
 
     self.Paint = function(self, w, h)
       self:DrawBlur(1, 1)
