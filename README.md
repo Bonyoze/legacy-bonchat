@@ -1,6 +1,6 @@
 # gmod-bonchat
 #### (WIP) A chatbox for Garry's Mod with markdown support, emoji support, ability to show images/videos, and some other stuff
-Should work on any branch, but intended for usage on `x86-64`
+Should work on any branch, but intended for usage on `x86-64` [Read this](https://github.com/Bonyoze/gmod-bonchat/issues/1)
 
 ![](https://user-images.githubusercontent.com/59924045/169673128-443d5b49-9913-499d-a5bf-3fdb157df680.png "Showcase of markdown support and emoji catalog")
 
