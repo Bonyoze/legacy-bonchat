@@ -224,35 +224,37 @@ return [[<html>
         margin-top: 4px;
         margin-right: 4px;
         border-radius: 4px;
+        color: #fff;
         overflow: hidden;
         cursor: pointer;
+      }
+      .attachment > * {
+        display: inline-block;
+        max-width: 100%;
+        border-radius: 4px;
+        /* height is handled by cvar */
       }
       .attachment.loading, .attachment.failed, .attachment.blocked, .attachment.hidden {
         padding: 0.25rem;
         font-size: 0.8rem;
-        color: #fff;
         background-color: rgba(0,0,0,0.5);
         -webkit-user-select: none;
         user-select: none;
       }
-
-      div.image-attachment img {
-        max-width: 100%;
-      }
-      .image-attachment.loading img, .image-attachment.failed img, .image-attachment.blocked img, .image-attachment.hidden img {
+      .attachment.loading > *, .attachment.failed > *, .attachment.blocked > *, .attachment.hidden > * {
         display: none;
       }
-      .image-attachment.loading::before {
-        content: "(Image loading...)";
+      .attachment.loading::before {
+        content: "Attachment (loading...)";
       }
-      .image-attachment.failed::before {
-        content: "(Image failed to load)";
+      .attachment.failed::before {
+        content: "Attachment (failed to load)";
       }
-      .image-attachment.blocked::before {
-        content: "(Image not whitelisted)";
+      .attachment.blocked::before {
+        content: "Attachment (not whitelisted)";
       }
-      .image-attachment.hidden::before {
-        content: "(Image hidden)";
+      .attachment.hidden::before {
+        content: "Attachment (hidden)";
       }
 
       img.emoji {
@@ -287,10 +289,14 @@ return [[<html>
       // Discord
       "cdn.discordapp.com",
       "media.discordapp.net",
+      // Youtube
+      "youtube.com",
+      "youtu.be",
       // Twitter
+      "twitter.com",
       "pbs.twimg.com",
       // Dropbox
-      "www.dropbox.com",
+      "dropbox.com",
       "dl.dropboxusercontent.com",
       // Imgur
       "i.imgur.com",
@@ -308,8 +314,12 @@ return [[<html>
     function isWhitelistedURL(href) {
       var a = document.createElement("a");
       a.href = href;
-      var domain = a.host + a.pathname;
-      return WHITELIST_DOMAINS.some(function(x) { return domain.substring(0, x.length) == x; });
+      var domain = a.host.replace(/^www\./, "") + a.pathname;
+      return WHITELIST_DOMAINS.some(function(str) {
+        var target = str.replace(/^www\./, "");
+        if (target.indexOf("/") == -1) target += "/";
+        return domain.slice(0, target.length) == target;
+      });
     }
   </script>
   <script> // emojis script
@@ -688,17 +698,8 @@ return [[<html>
       return this;
     }
 
-    jQuery.fn.cvarApplyShowImages = function() {
-      if (convars.bonchat_show_images) {
-        this.removeClass("hidden");
-      } else {
-        this.addClass("hidden");
-      }
-      return this;
-    }
-
-    jQuery.fn.cvarApplyImageMaxHeight = function() {
-      $("img", this).css("max-height", (5 + convars.bonchat_image_max_height) + "rem");
+    jQuery.fn.cvarApplyAttachMaxHeight = function() {
+      this.find("img, video").css("max-height", (5 + convars.bonchat_attach_max_height / 5) + "rem");
       return this;
     }
 
@@ -718,13 +719,12 @@ return [[<html>
         convars.bonchat_link_max_length = parseInt(val); // int
         $(".link").cvarApplyLinkMaxLength();
       },
-      bonchat_show_images: function(val) {
-        convars.bonchat_show_images = parseInt(val) == 1; // bool
-        $(".image-attachment").cvarApplyShowImages();
+      bonchat_load_attachments: function(val) {
+        convars.bonchat_load_attachments = parseInt(val) == 1; // bool
       },
-      bonchat_image_max_height: function(val) {
-        convars.bonchat_image_max_height = parseInt(val); // int
-        $(".image-attachment").cvarApplyImageMaxHeight();
+      bonchat_attach_max_height: function(val) {
+        convars.bonchat_attach_max_height = parseInt(val); // int
+        $(".attachment").cvarApplyAttachMaxHeight();
       }
     }
 
@@ -887,14 +887,172 @@ return [[<html>
       return this;
     };
 
+    jQuery.fn._load = function() {
+      if (!this.hasClass("attachment")) return;
+
+      var scrolled = isFullyScrolled();
+      this.removeClass("loading").cvarApplyAttachMaxHeight();
+      if (scrolled) scrollToBottom();
+      this.trigger("attachment:load");
+
+      return this;
+    };
+
+    jQuery.fn._error = function() {
+      if (!this.hasClass("attachment")) return;
+
+      this.addClass("failed").removeClass("loading").trigger("attachment:error");
+
+      return this;
+    };
+
+    function urlIsDomain(href, domains) {
+      var a = document.createElement("a");
+      a.href = href;
+      var domain = a.host.replace(/^www\./, "") + a.pathname;
+      return domains.some(function(str) {
+        var target = str.replace(/^www\./, "");
+        if (target.indexOf("/") == -1) target += "/";
+        return domain == target;
+      });
+    }
+
+    jQuery.fn._loadEmbed = function(url, metas) {
+      if (!this.hasClass("embed-attachment")) return;
+
+      var attachment = this,
+      properties = {};
+
+      for (tag of metas) {
+        if (tag.property && tag.content && properties[tag.property] === undefined) properties[tag.property] = tag.content;
+      }
+
+      var a = document.createElement("a");
+      a.href = url;
+
+      var domain = a.host.replace(/^www\./, ""),
+      path = a.pathname;
+
+      if ((domain == "youtube.com" && path == "/watch") || domain == "youtu.be") {
+        attachment.append(
+          $("<iframe style='border: none; width: 288; height: 162'>")
+            .attr("src", properties["og:video:secure_url"] || properties["og:video:url"])
+        );
+        attachment._load();
+      /*} else if (domain == "twitter.com") {
+        attachment._load();*/
+      } else
+        attachment._error();
+
+      return this;
+    };
+
+    jQuery.fn._loadImage = function(url, base64) {
+      if (!this.hasClass("image-attachment")) return;
+      
+      var attachment = this,
+      retry;
+
+      attachment.append(
+        $("<img>")
+          .on("load", function() { // image loaded
+            $(this).off();
+            attachment._load();
+          })
+          .on("error", function() { // image failed to load
+            if (!retry && base64) { // retry with base64
+              $(this).attr("src", base64);
+              retry = true
+            } else { // failed to load base64 or no base64 provided
+              $(this).remove();
+              attachment._error();
+            }
+          })
+          .attr("src", url)
+      );
+
+      return this;
+    };
+
+    jQuery.fn._loadVideo = function(url) {
+      if (!this.hasClass("video-attachment")) return;
+      
+      var attachment = this;
+
+      attachment.append(
+        $("<video controls>")
+          .on("loadeddata", function() {
+            if (this.readyState >= 2) attachment._load();
+          })
+          .on("error", function() {
+            $(this).remove();
+            attachment._error();
+          })
+          .attr("src", url)
+      );
+
+      return this;
+    };
+
+    jQuery.fn._loadAudio = function(url) {
+      if (!this.hasClass("audio-attachment")) return;
+
+      var attachment = this;
+
+      attachment.append(
+        $("<audio controls>")
+          .on("loadeddata", function() {
+            if (this.readyState >= 2) attachment._load();
+          })
+          .on("error", function() {
+            $(this).remove();
+            attachment._error();
+          })
+          .attr("src", url)
+      );
+
+      return this;
+    };
+
+    jQuery.fn._loadMedia = function(url) {
+      if (!this.hasClass("attachment")) return;
+
+      var attachment = this;
+
+      // check all media types
+      $("<img>")
+        .on("load", function() {
+          $(this).remove();
+          attachment.addClass("image-attachment")._loadImage(url);
+        })
+        .on("error", function() {
+          $(this).remove();
+          $("<video>") // this checks for both video and audio (audio can be used in a video tag)
+            .on("loadeddata", function() {
+              if (this.readyState >= 2) {
+                $(this).remove();
+                if (this.videoHeight) // audio can be discerned by checking if it doesn't have valid video dimensions
+                  attachment.addClass("video-attachment")._loadVideo(url);
+                else // invalid video dimensions (must be audio)
+                  attachment.addClass("audio-attachment")._loadAudio(url);
+              }
+            })
+            .on("error", function() {
+              $(this).remove();
+              attachment._error();
+            })
+            .attr("src", url);
+        })
+        .attr("src", url);
+      
+      return this;
+    };
+
     /*
-      append an image to a message's attachments
-        url:     the link to check the whitelist
-        src:     the image data the img element should use (will use url if not set)
-        cbLoad:  the callback function after the image successfully loads (optional)
-        cbError: the callback function after the image fails to load (optional)
+      append an attachment to a message
+        url: the attachment link
     */
-    jQuery.fn.appendImage = function(url, cbLoad, cbError) {
+    jQuery.fn.appendAttachment = function(url) {
       if (!this.hasClass("message")) return;
 
       var msgID = this.data("id"),
@@ -902,60 +1060,32 @@ return [[<html>
       attachments = $(".message-attachments", this);
 
       this.data("attachIDNum", ++attachID); // increment attachment id
-
-      var src = url,
-      sep = src.match(/(.*?)([?#].+)/),
-      hostpath = sep ? sep[1] : src,
-      paramhash = sep ? sep[2] : "";
-
-      // fix tenor gif url
-      if ((hostpath.indexOf("https://tenor.com/view/") == 0 || hostpath.indexOf("https://www.tenor.com/view/") == 0) && hostpath.indexOf(".gif") != src.length - 4)
-        src = hostpath + ".gif" + paramhash;
       
-      var retry,
-      attachment = $("<div class='attachment image-attachment loading' data-id='" + attachID + "'>")
-        .attr("href", url) // used for hover label and opening in browser
-        .appendTo(attachments);
-      
-      if (isWhitelistedURL(url))
-        attachment.append(
-          $("<img>")
-            .on("load", function() { // image loaded
-              $(this).off();
-              var scrolled = isFullyScrolled();
-              attachment
-                .removeClass("loading")
-                .cvarApplyShowImages()
-                .cvarApplyImageMaxHeight();
-              if (scrolled) scrollToBottom();
-              if (cbLoad) cbLoad();
-            })
-            .on("error", function() { // image failed to load
-              if (!retry) {
-                glua.retryAttachment(msgID, attachID, src);
-                retry = true;
-              } else {
-                $(this).off().remove();
-                attachment
-                  .addClass("failed")
-                  .removeClass("loading");
-                if (cbError) cbError();
-              }
-            })
-            .attr("src", src)
-        );
+      var attachment = $("<div class='attachment' data-id='" + attachID + "'>")
+        .data("id", attachID)
+        .data("load", function() {
+          attachment.empty().addClass("loading");
+
+          // fix tenor gif url
+          var sep = url.match(/(.*?)([?#].+)/), hostpath = sep ? sep[1] : url, paramhash = sep ? sep[2] : "";
+          if ((hostpath.indexOf("https://tenor.com/view/") == 0 || hostpath.indexOf("https://www.tenor.com/view/") == 0) && hostpath.indexOf(".gif") != url.length - 4)
+            url = hostpath + ".gif" + paramhash;
+
+          glua.loadAttachment(msgID, attachID, url);
+        })
+        .attr("href", url); // used for hover label and opening in browser
+
+      if (!convars.bonchat_load_attachments)
+        attachment.addClass("hidden").trigger("attachment:error");
+      else if (!isWhitelistedURL(url))
+        attachment.addClass("blocked").trigger("attachment:error");
       else {
-        attachment.addClass("blocked");
-        if (cbError) cbError();
+        attachment.data("load")();
       }
+
+      attachment.appendTo(attachments);
       
       return attachment;
-    };
-
-    jQuery.fn.appendVideo = function(url, cbLoad, cbError) {
-      if (!this.hasClass("message")) return;
-
-
     };
 
     function Message(id) {
@@ -983,13 +1113,9 @@ return [[<html>
       this.appendPlayer = function(name, color, steamID) {
         wrapper.appendPlayer(name, color || this.textColor, steamID);
       };
-      this.appendImage = function(url) {
+      this.appendAttachment = function(url) {
         if (attachments.children().length >= convars.bonchat_msg_max_attachments) return;
-        wrapper.appendImage(url);
-      };
-      this.appendVideo = function(url) {
-        if (attachments.children().length >= convars.bonchat_msg_max_attachments) return;
-        wrapper.appendVideo(url);
+        wrapper.appendAttachment(url);
       };
       this.send = function(prependHidden) {
         // set send time
@@ -1021,14 +1147,17 @@ return [[<html>
           if (seenURLs[url] || !isWhitelistedURL(url)) return;
           seenURLs[url] = true;
 
-          var attach = wrapper.appendImage(url, function() { // success
-            var scrolled = isFullyScrolled();
-            link.remove();
-            attach.show();
-            if (scrolled) scrollToBottom();
-          }, function() { // failed
-            attach.remove();
-          }).hide();
+          // try to load attachment
+          var attach = wrapper.appendAttachment(url)
+            .on("attachment:load", function() { // success
+              var scrolled = isFullyScrolled();
+              attach.off().show();
+              if (scrolled) scrollToBottom();
+            })
+            .on("attachment:error", function() {
+              attach.remove();
+            })
+            .hide();
         });
         
         // load emojis
@@ -1042,7 +1171,7 @@ return [[<html>
               pre.replaceWith(img.attr("alt", pre.text()));
             })
             .on("error", function() {
-              img.off().remove();
+              img.remove();
             })
             .attr("src", url);
         });
@@ -1225,8 +1354,12 @@ return [[<html>
           case elem.hasClass("dismiss-button"): // clicked on a msg dismiss button
             glua.dismissMessage(elem.parents(".message").data("id"));
             break;
-          case elem.closest("[href!=''][href]").length != 0: // clicked on an element with a src or href or parent with href
-            // open the image or page with Glua
+          case elem.closest("[href!=''][href]").length != 0: // clicked on an element with an href or parent with href
+            e.preventDefault();
+
+            // open the page or media with Glua (or the Steam browser overlay)
+            var safe = elem.is(".blocked") || elem.is(".hidden");
+
             if (elem.is("img") && elem.parent(".image-attachment").length)
               glua.openImage(
                 elem.parent().attr("href"),
@@ -1234,10 +1367,21 @@ return [[<html>
                 elem.prop("naturalWidth"),
                 elem.prop("naturalHeight"),
                 elem.prop("width"),
-                elem.prop("height")
+                elem.prop("height"),
+                safe
               );
-            else
-              glua.openPage(elem.closest("[href!=''][href]").attr("href"), elem.is(".hidden"));
+            else if (elem.is("video") && elem.parent(".video-attachment").length) {
+              glua.openVideo(
+                elem.parent().attr("href"),
+                elem.attr("src"),
+                elem.prop("videoWidth"),
+                elem.prop("videoHeight"),
+                null,
+                null,
+                safe
+              );
+            } else
+              glua.openPage(elem.closest("[href!=''][href]").attr("href"), safe);
             break;
         }
 

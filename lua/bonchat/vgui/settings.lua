@@ -36,17 +36,17 @@ local PANEL = {
     -- auto dismiss toggle
     self:AddCheckbox("Auto dismiss messages", BonChat.CVAR.AUTO_DISMISS, BonChat.CVAR.GetAutoDismiss())
     -- image embeds toggle
-    self:AddCheckbox("Show image attachments", BonChat.CVAR.SHOW_IMGS, BonChat.CVAR.GetShowImages())
+    self:AddCheckbox("Load attachments", BonChat.CVAR.LOAD_ATTACHMENTS, BonChat.CVAR.GetLoadAttachments())
     -- image height slider
-    local cvarImageHeight = GetConVar(BonChat.CVAR.IMG_MAX_HEIGHT)
-    self:AddSlider("Max Image Height", BonChat.CVAR.IMG_MAX_HEIGHT, cvarImageHeight:GetInt(), cvarImageHeight:GetMin(), cvarImageHeight:GetMax(), 0)
+    local cvarAttachHeight = GetConVar(BonChat.CVAR.ATTACH_MAX_HEIGHT)
+    self:AddSlider("Attachment Max Height", BonChat.CVAR.ATTACH_MAX_HEIGHT, cvarAttachHeight:GetInt(), cvarAttachHeight:GetMin(), cvarAttachHeight:GetMax(), 0)
     -- skin tone emojis toggle
     self:AddCheckbox("Show results for skin tone emojis", BonChat.CVAR.SHOW_TONE_EMOJIS, BonChat.CVAR.GetShowToneEmojis())
   end,
   AddElement = function(self, class)
     local elem = self.panel:Add(class)
     elem:Dock(TOP)
-    elem:DockMargin(5, 0, 5, 5)
+    elem:DockMargin(4, 0, 4, 4)
     return elem
   end,
   AddButton = function(self, text, doClick)

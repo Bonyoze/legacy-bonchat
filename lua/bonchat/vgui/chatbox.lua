@@ -61,6 +61,7 @@ local PANEL = {
     self:AddFunc("say", BonChat.Say)
     self:AddFunc("openPage", BonChat.OpenPage)
     self:AddFunc("openImage", BonChat.OpenImage)
+    self:AddFunc("openVideo", BonChat.OpenVideo)
     self:AddFunc("pasteImage", BonChat.PasteImage)
 
     self:AddFunc("prependHiddenMessages", function(currTotal) self:PrependHiddenMessages(currTotal) end)
@@ -88,12 +89,28 @@ local PANEL = {
         gui.OpenURL("https://steamcommunity.com/profiles/" .. util.SteamIDTo64(steamID))
       end
     end)
-    self:AddFunc("retryAttachment", function(msgID, attachID, src)
-      local attachImg = string.format("getAttachmentByID(%d, getMessageByID(%d)).find('img')", attachID, msgID)
-      BonChat.LoadAttachment(src, function(newSrc)
-        self:CallJSParams(attachImg .. ".attr('src', '%s')", newSrc)
-      end, function()
-        self:CallJS(attachImg .. ".trigger('error')")
+    self:AddFunc("loadAttachment", function(msgID, attachID, url)
+      local attachElem = string.format("getAttachmentByID(%d, getMessageByID(%d))", attachID, msgID)
+
+      BonChat.LoadAttachment(url, function(data)
+        local type = data.type
+        if type == "EMBED" then
+          self:CallJSParams(attachElem .. ".addClass('embed-attachment')._loadEmbed('%s', JSON.parse('%s'))", url, util.TableToJSON(data.metas))
+        elseif type == "IMAGE" then
+          -- incase Awesomium can't load the url due to only supporting up to TLS 1.0, the base64 is provided
+          self:CallJSParams(attachElem .. ".addClass('image-attachment')._loadImage('%s', '%s')", url, data.base64)
+        elseif type == "VIDEO" then
+          self:CallJSParams(attachElem .. ".addClass('video-attachment')._loadVideo('%s')", url)
+        elseif type == "AUDIO" then
+          self:CallJSParams(attachElem .. ".addClass('audio-attachment')._loadAudio('%s')", url)
+        end
+      end, function(err)
+        if err == 1 then
+          -- request was successful but received a bad code
+          -- this could mean GMod was blocked from accessing the resource
+          -- but we can still try and load it via bruteforcing every media type until the browser loads one of them
+          self:CallJSParams(attachElem .. "._loadMedia('%s')", url)
+        end
       end)
     end)
 
@@ -211,10 +228,10 @@ local PANEL = {
       local attachment = attachments[i]
       local t, v = attachment.type, attachment.value
 
-      if t == BonChat.msgAttachTypes.IMAGE then
-        self:AddJS("msg.appendImage('%s')", string.JavascriptSafe(v))
-      elseif t == BonChat.msgAttachTypes.VIDEO then
-        self:AddJS("msg.appendVideo('%s')", string.JavascriptSafe(v))
+      if t == BonChat.msgAttachTypes.LINK then
+        self:AddJS("msg.appendAttachment('%s')", string.JavascriptSafe(v))
+      elseif t == BonChat.msgAttachTypes.GAME then
+        -- todo: game asset attachments
       end
     end
 

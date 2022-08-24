@@ -90,25 +90,29 @@ return [[<html>
         overflow: hidden;
         font-weight: bold;
       }
-      .attachment.loading .attachment-title::before {
+      .attachment-label {
+        display: inline-block;
+        margin-top: 4px;
+        padding: 4px;
+        background-color: rgba(0,0,0,0.5);
+        border-radius: 4px;
         color: #fff;
-        content: "Loading...";
       }
       .attachment.failed .attachment-title::before {
         color: #f00;
-        content: "Failed to load";
+        content: "Invalid input";
       }
-      .attachment:not(.loading):not(.failed) .attachment-title::before {
+      .attachment:not(.failed) .attachment-title::before {
         color: #0f0;
-        content: "Successfully loaded";
+        content: "Successfully added";
       }
-      .attachment-label {
+      .attachment:not(.failed) .attachment-label {
         overflow: hidden;
         color: #00aff4;
         white-space: nowrap;
         cursor: pointer;
       }
-      .attachment-label:hover {
+      .attachment:not(.failed) .attachment-label:hover {
         text-decoration: underline;
       }
     </style>
@@ -143,57 +147,18 @@ return [[<html>
       e.scrollTop = e.scrollHeight;
     }
 
-    function isValidURL(str) {
-      try {
-        var a = document.createElement("a");
-        a.href = str;
-      } catch (_) {
-        return false;
-      }
-      return a.protocol === "http:" || a.protocol === "https:";
-    }
-
     function Attachment(id, str) {
-      this.ATTACHMENT_WRAPPER = $("<div class='attachment loading' data-id='" + id + "'>").appendTo(attachmentContainer);
+      this.ATTACHMENT_WRAPPER = $("<div class='attachment' data-id='" + id + "'>").appendTo(attachmentContainer);
       this.ATTACHMENT_BUTTON = $("<img class='attachment-button' src='asset://garrysmod/materials/icon16/cancel.png'>").appendTo(this.ATTACHMENT_WRAPPER);
       this.ATTACHMENT_TITLE = $("<div class='attachment-title'>").appendTo(this.ATTACHMENT_WRAPPER);
-      this.ATTACHMENT_LABEL = $("<div class='attachment-label'>").text(str).appendTo(this.ATTACHMENT_WRAPPER);
+      this.ATTACHMENT_LABEL = $("<div class='attachment-label'>").text(str).attr("href", str).appendTo(this.ATTACHMENT_WRAPPER);
 
       var wrapper = this.ATTACHMENT_WRAPPER;
 
       wrapper.data("id", id);
 
-      if (isValidURL(str)) {
-        var src = str,
-        sep = src.match(/(.*?)([?#].+)/),
-        hostpath = sep ? sep[1] : src,
-        paramhash = sep ? sep[2] : "";
-
-        // fix tenor gif url
-        if ((hostpath.indexOf("https://tenor.com/view/") == 0 || hostpath.indexOf("https://www.tenor.com/view/") == 0) && hostpath.indexOf(".gif") != src.length - 4)
-          src = hostpath + ".gif" + paramhash;
-        
-        var retry;
-        wrapper.append(
-          $("<img hidden>")
-            .on("load", function() { // image loaded
-              $(this).off().remove();
-              wrapper.removeClass("loading");
-              glua.readyAttachment(id, str);
-            })
-            .on("error", function() { // image failed to load
-              if (!retry) {
-                glua.retryAttachment(id, src);
-                retry = true;
-              } else {
-                $(this).off().remove();
-                wrapper
-                  .addClass("failed")
-                  .removeClass("loading");
-              }
-            })
-            .attr("src", src)
-        );
+      if (str.match(/^(https?:\/\/[^\s<]+[^<.,:;"')\]\s])/)) { // is valid link
+        glua.readyAttachment(id, str);
       } else {
         wrapper.addClass("failed");
       }
@@ -304,8 +269,8 @@ return [[<html>
           case elem.hasClass("attachment-button"):  // remove the attachment
             glua.removeAttachment(elem.parent().data("id"));
             break;
-          case elem.hasClass("emoji"): // paste the emoji into the chatbox entry
-            glua.insertText(elem.data("shortcode") + " ");
+          case elem.hasClass("attachment-label") && elem.parents(".attachment:not(.failed)").length != 0:
+            glua.openPage(elem.attr("href"));
             break;
         }
         

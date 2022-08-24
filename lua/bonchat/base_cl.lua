@@ -49,8 +49,8 @@ addJSConVar(BonChat.CVAR.MSG_MAX_LENGTH)
 addJSConVar(BonChat.CVAR.MSG_MAX_ATTACHS)
 addJSConVar(BonChat.CVAR.AUTO_DISMISS)
 addJSConVar(BonChat.CVAR.LINK_MAX_LENGTH)
-addJSConVar(BonChat.CVAR.SHOW_IMGS)
-addJSConVar(BonChat.CVAR.IMG_MAX_HEIGHT)
+addJSConVar(BonChat.CVAR.LOAD_ATTACHMENTS)
+addJSConVar(BonChat.CVAR.ATTACH_MAX_HEIGHT)
 
 function BonChat.SendInfoMessage(str)
   local msg = BonChat.Message()
@@ -131,7 +131,7 @@ function BonChat.Say(text, mode)
   net.WriteUInt(totalAttachs, 4)
   for i = 1, totalAttachs do
     local attach = attachments[i]
-    net.WriteUInt(attach.type, 4)
+    net.WriteUInt(attach.type, 2)
     net.WriteString(attach.value)
   end
   BonChat.frame.attachments:ClearAttachments()
@@ -176,8 +176,14 @@ function BonChat.OpenPage(url, safe)
   BonChat.frame.browser:OpenPage(url)
 end
 
-function BonChat.OpenImage(title, url, w, h, minW, minH)
+function BonChat.OpenImage(title, url, w, h, minW, minH, safe)
+  if safe or BRANCH ~= "x86-64" then return BonChat.OpenURL(url) end
   BonChat.frame.browser:OpenImage(title, url, w, h, minW, minH)
+end
+
+function BonChat.OpenVideo(title, url, w, h, minW, minH, safe)
+  if safe or BRANCH ~= "x86-64" then return BonChat.OpenURL(url) end
+  BonChat.frame.browser:OpenVideo(title, url, w, h, minW, minH)
 end
 
 local imagePasteCache = {}
@@ -244,17 +250,46 @@ function BonChat.LoadAttachment(url, success, fail)
       method = "get",
       success = function(code, body, headers)
         if code == 200 then
-          local imageType = string.match(headers["Content-Type"], "^(image/[%w.+-]+)")
-          if imageType then
-            local data = "data:" .. imageType .. ";base64, " .. util.Base64Encode(body, true)
-            attachmentLoadCache[url] = data
-            success(data)
-            return
+          local mime = string.Split(headers["Content-Type"], ";")[1]
+
+          -- parse data for attachment
+          if string.match(mime, "^text/html") then
+            local metas = {}
+            for tag in string.gmatch(body, "<meta (.-)>") do
+              local attrs = {}
+              for name, val in string.gmatch(tag, "([^%s]-)=\"(.-)\"") do
+                attrs[name] = val
+              end
+              table.insert(metas, attrs)
+            end
+            attachmentLoadCache[url] = {
+              type = "EMBED",
+              metas = metas
+            }
+          elseif string.match(mime, "^image/") then
+            attachmentLoadCache[url] = {
+              type = "IMAGE",
+              base64 = "data:" .. mime .. ";base64, " .. util.Base64Encode(body, true)
+            }
+          elseif string.match(mime, "^video/") then
+            attachmentLoadCache[url] = { type = "VIDEO" }
+          elseif string.match(mime, "^audio/") then
+            attachmentLoadCache[url] = { type = "AUDIO" }
           end
+
+          if attachmentLoadCache[url] then
+            success(attachmentLoadCache[url])
+          else
+            fail(2, mime) -- received unsupported mime type
+          end
+
+          return
         end
-        fail()
+        fail(1, code) -- received bad code
       end,
-      failed = fail
+      failed = function()
+        fail(0) -- request failed
+      end
     })
   end
 end
@@ -401,7 +436,7 @@ net.Receive("bonchat_say", function()
   local totalAttachs = net.ReadUInt(4)
   local attachments = {}
   for i = 1, totalAttachs do
-    local type, value = net.ReadUInt(4), net.ReadString()
+    local type, value = net.ReadUInt(2), net.ReadString()
     table.insert(attachments, { type = type, value = value })
   end
 

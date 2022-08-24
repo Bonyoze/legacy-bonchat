@@ -18,14 +18,8 @@ local msgArgTypes = enum {
 }
 
 local msgAttachTypes = enum {
-  -- media files
-  "IMAGE",
-  "VIDEO",
-  "AUDIO",
-  -- game assets
-  "MODEL",
-  "TEXTURE",
-  "SOUND"
+  "LINK", -- webpage embeds, image files, video files, audio files
+  "GAME" -- game models, game textures, game sounds
 }
 
 local msgOptions = enum {

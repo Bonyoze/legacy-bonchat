@@ -19,22 +19,13 @@ local PANEL = {
     self.dhtml:AddFunc("showHoverLabel", BonChat.ShowHoverLabel)
     self.dhtml:AddFunc("hideHoverLabel", BonChat.HideHoverLabel)
     self.dhtml:AddFunc("openPage", BonChat.OpenPage)
-    self.dhtml:AddFunc("openImage", BonChat.OpenImage)
     self.dhtml:AddFunc("pasteImage", BonChat.PasteImage)
 
     self.dhtml:AddFunc("addAttachment", function(str) self:AddAttachment(str) end)
     self.dhtml:AddFunc("removeAttachment", function(id) self:RemoveAttachment(id) end)
 
-    self.dhtml:AddFunc("retryAttachment", function(attachID, src)
-      local attachImg = string.format("getAttachmentByID(%d).find('img')", attachID)
-      BonChat.LoadAttachment(src, function()
-        self.dhtml:CallJS(attachImg .. ".trigger('load')")
-      end, function(err)
-        self.dhtml:CallJS(attachImg .. ".trigger('error')")
-      end)
-    end)
     self.dhtml:AddFunc("readyAttachment", function(attachID, str)
-      self.attachs[attachID] = { type = BonChat.msgAttachTypes.IMAGE, value = str }
+      self.attachs[attachID] = { type = BonChat.msgAttachTypes.LINK, value = str }
     end)
 
     self.dhtml:SetHTML(BonChat.GetResource("attachments.html"))

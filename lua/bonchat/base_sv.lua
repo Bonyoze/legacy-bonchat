@@ -3,6 +3,7 @@ AddCSLuaFile("bonchat/message.lua")
 AddCSLuaFile("bonchat/custom_chat.lua")
 
 AddCSLuaFile("bonchat/resources/browser_image.html.lua")
+AddCSLuaFile("bonchat/resources/browser_video.html.lua")
 AddCSLuaFile("bonchat/resources/chatbox.html.lua")
 AddCSLuaFile("bonchat/resources/emojis.html.lua")
 AddCSLuaFile("bonchat/resources/attachments.html.lua")
@@ -33,7 +34,7 @@ net.Receive("bonchat_say", function(_, ply)
   local totalAttachs = net.ReadUInt(4)
   local attachments = {}
   for i = 1, totalAttachs do
-    local type, value = net.ReadUInt(4), net.ReadString()
+    local type, value = net.ReadUInt(2), net.ReadString()
     table.insert(attachments, { type = type, value = value })
   end
 
@@ -50,16 +51,9 @@ net.Receive("bonchat_say", function(_, ply)
     net.WriteUInt(totalAttachs, 4)
     for i = 1, totalAttachs do
       local attachment = attachments[i]
-      net.WriteUInt(attachment.type, 4)
+      net.WriteUInt(attachment.type, 2)
       net.WriteString(attachment.value)
     end
-    --[[net.WriteUInt(15, 4)
-    net.WriteUInt(1, 4)
-    net.WriteString("https://trello.com/1/cards/61a3f318fd73b114ecc12ad4/attachments/61a3f7e943eccc53a5e60fbc/previews/61a3f7eb43eccc53a5e60fc7/download/CharBanner-Update.png")
-    for i = 1, 14 do
-      net.WriteUInt(1, 4)
-      net.WriteString("https://media.discordapp.net/attachments/292328649711943680/883812645105446922/25.gif")
-    end]]
   if teamChat then
     net.Send(team.GetPlayers(ply:Team()))
   else

@@ -1,6 +1,6 @@
 local PANEL = {
   Init = function(self)
-    self:SetSize(ScrW() * 0.4, ScrH() * 0.31)
+    self:SetSize(ScrW() * 0.35, ScrH() * 0.5)
     self:SetPos(ScrW() * 0.01875, ScrH() * 0.875 - self:GetTall())
     self:SetMinWidth(self:GetWide() * 0.5)
     self:SetMinHeight(self:GetTall() * 0.5)
@@ -35,7 +35,7 @@ local PANEL = {
       for i = 1, #self.subPanels do
         local subPanel = self.subPanels[i]
         subPanel.btn:SetPos(w - i * 20 - 4, 3)
-        subPanel:SetSize(scrW * 0.15, h)
+        subPanel:SetSize(scrW * 0.175, h)
         subPanel:SetPos(x + w + 4, y)
       end
     end

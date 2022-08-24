@@ -15,8 +15,8 @@ BonChat.CVAR.CHAT_TICK = "bonchat_chat_tick"
 BonChat.CVAR.MAX_MSGS = "bonchat_max_messages"
 BonChat.CVAR.AUTO_DISMISS = "bonchat_auto_dismiss"
 BonChat.CVAR.LINK_MAX_LENGTH = "bonchat_link_max_length"
-BonChat.CVAR.SHOW_IMGS = "bonchat_show_images"
-BonChat.CVAR.IMG_MAX_HEIGHT = "bonchat_image_max_height"
+BonChat.CVAR.LOAD_ATTACHMENTS = "bonchat_load_attachments"
+BonChat.CVAR.ATTACH_MAX_HEIGHT = "bonchat_attach_max_height"
 BonChat.CVAR.SHOW_TONE_EMOJIS = "bonchat_show_tone_emojis"
 
 
@@ -29,8 +29,8 @@ CreateClientConVar(BonChat.CVAR.CHAT_TICK, 1, true, nil, "Play the chat \"tick\"
 CreateClientConVar(BonChat.CVAR.MAX_MSGS, 1000, true, nil, "Set the max amount of messages that can be loaded in the chatbox", 100, 1000)
 CreateClientConVar(BonChat.CVAR.AUTO_DISMISS, 1, true, nil, "Automatically dismiss messages upon closing the chatbox")
 CreateClientConVar(BonChat.CVAR.LINK_MAX_LENGTH, 64, true, nil, "Set the character limit of links", 8, 256)
-CreateClientConVar(BonChat.CVAR.SHOW_IMGS, 1, true, nil, "Show image attachments")
-CreateClientConVar(BonChat.CVAR.IMG_MAX_HEIGHT, 1, true, nil, "Set the max height for image attachments", 1, 10)
+CreateClientConVar(BonChat.CVAR.LOAD_ATTACHMENTS, 1, true, nil, "Automatically load attachments")
+CreateClientConVar(BonChat.CVAR.ATTACH_MAX_HEIGHT, 25, true, nil, "Set the max height for attachments", 1, 100)
 CreateClientConVar(BonChat.CVAR.SHOW_TONE_EMOJIS, 0, true, nil, "Show results for skin tone emojis when searching in the catalog")
 
 function BonChat.CVAR.GetMsgMaxLength()
@@ -65,12 +65,12 @@ function BonChat.CVAR.GetLinkMaxLength()
   return GetConVar(BonChat.CVAR.LINK_MAX_LENGTH):GetInt()
 end
 
-function BonChat.CVAR.GetShowImages()
-  return GetConVar(BonChat.CVAR.SHOW_IMGS):GetBool()
+function BonChat.CVAR.GetLoadAttachments()
+  return GetConVar(BonChat.CVAR.LOAD_ATTACHMENTS):GetBool()
 end
 
-function BonChat.CVAR.GetImageMaxHeight()
-  return GetConVar(BonChat.CVAR.IMG_MAX_HEIGHT):GetInt()
+function BonChat.CVAR.GetAttachMaxHeight()
+  return GetConVar(BonChat.CVAR.GET_ATTACH_MAX_HEIGHT):GetInt()
 end
 
 function BonChat.CVAR.GetShowToneEmojis()
