@@ -210,12 +210,12 @@ return [[<html>
         opacity: 1;
       }
 
-      span.link, span.autolink {
+      span.link, span.safe-link {
         color: #00aff4;
         cursor: pointer;
         pointer-events: all;
       }
-      span.link:hover, span.autolink:hover {
+      span.link:hover, span.safe-link:hover {
         text-decoration: underline;
       }
 
@@ -257,6 +257,12 @@ return [[<html>
         content: "Attachment (hidden)";
       }
 
+      video, audio {
+        outline: unset;
+        font-weight: bold;
+        text-shadow: none;
+      }
+
       img.emoji {
         display: inline-block;
         width: 1.375rem;
@@ -293,8 +299,8 @@ return [[<html>
       "youtube.com",
       "youtu.be",
       // Twitter
-      "twitter.com",
       "pbs.twimg.com",
+      "video.twimg.com",
       // Dropbox
       "dropbox.com",
       "dl.dropboxusercontent.com",
@@ -503,7 +509,7 @@ return [[<html>
           });
         }
       },
-      autolink: {
+      safe_link: {
         match: /^<([^: >]+:\/\/+[^ >]+)>/,
         parse: function(capture) {
           return {
@@ -511,7 +517,7 @@ return [[<html>
           };
         },
         html: function(node) {
-          return htmlTag("span", node.content, { class: "autolink", href: node.content });
+          return htmlTag("span", node.content, { class: "safe-link", href: node.content });
         }
       },
       link: {
@@ -696,12 +702,16 @@ return [[<html>
           link.text(url);
       });
       return this;
-    }
+    };
 
     jQuery.fn.cvarApplyAttachMaxHeight = function() {
-      this.find("img, video").css("max-height", (5 + convars.bonchat_attach_max_height / 5) + "rem");
+      $("> img, > video", this).css("max-height", (5 + convars.bonchat_attach_max_height / 5) + "rem");
       return this;
-    }
+    };
+
+    jQuery.fn.cvarApplyAttachVolume = function() {
+      $("> video, > audio", this).prop("volume", convars.bonchat_attach_volume);
+    };
 
     const cvarCallbacks = {
       // serverside
@@ -725,6 +735,13 @@ return [[<html>
       bonchat_attach_max_height: function(val) {
         convars.bonchat_attach_max_height = parseInt(val); // int
         $(".attachment").cvarApplyAttachMaxHeight();
+      },
+      bonchat_attach_autoplay: function(val) {
+        convars.bonchat_attach_autoplay = parseInt(val) == 1; // bool
+      },
+      bonchat_attach_volume: function(val) {
+        convars.bonchat_attach_volume = parseFloat(val); // float
+        $(".video-attachment, .audio-attachment").cvarApplyAttachVolume();
       }
     }
 
@@ -893,6 +910,9 @@ return [[<html>
       var scrolled = isFullyScrolled();
       this.removeClass("loading").cvarApplyAttachMaxHeight();
       if (scrolled) scrollToBottom();
+
+      if (this.is(".video-attachment, .audio-attachment")) this.cvarApplyAttachVolume();
+
       this.trigger("attachment:load");
 
       return this;
@@ -939,8 +959,6 @@ return [[<html>
             .attr("src", properties["og:video:secure_url"] || properties["og:video:url"])
         );
         attachment._load();
-      /*} else if (domain == "twitter.com") {
-        attachment._load();*/
       } else
         attachment._error();
 
@@ -980,7 +998,8 @@ return [[<html>
       var attachment = this;
 
       attachment.append(
-        $("<video controls>")
+        $("<video controls controlsList='nofullscreen nodownload'>")
+          .prop("autoplay", convars.bonchat_attach_autoplay)
           .on("loadeddata", function() {
             if (this.readyState >= 2) attachment._load();
           })
@@ -1000,7 +1019,8 @@ return [[<html>
       var attachment = this;
 
       attachment.append(
-        $("<audio controls>")
+        $("<audio controls controlsList='nofullscreen nodownload'>")
+          .prop("autoplay", convars.bonchat_attach_autoplay)
           .on("loadeddata", function() {
             if (this.readyState >= 2) attachment._load();
           })
@@ -1151,6 +1171,7 @@ return [[<html>
           var attach = wrapper.appendAttachment(url)
             .on("attachment:load", function() { // success
               var scrolled = isFullyScrolled();
+              link.data("attachment", attach);
               attach.off().show();
               if (scrolled) scrollToBottom();
             })
@@ -1347,41 +1368,75 @@ return [[<html>
         if (!$(e.target).closest(chatbox).length) return; // only the chatbox and its children
 
         switch (true) {
-          case elem.hasClass("emoji"): // clicked on an emoji
+          case elem.is(".emoji"): // clicked on an emoji
             entryInput.focus();
             insertText(elem.attr("alt") + " "); // paste the emoji into the entry
             break;
-          case elem.hasClass("dismiss-button"): // clicked on a msg dismiss button
+          case elem.is(".dismiss-button"): // clicked on a msg dismiss button
             glua.dismissMessage(elem.parents(".message").data("id"));
             break;
-          case elem.closest("[href!=''][href]").length != 0: // clicked on an element with an href or parent with href
-            e.preventDefault();
-
-            // open the page or media with Glua (or the Steam browser overlay)
-            var safe = elem.is(".blocked") || elem.is(".hidden");
-
-            if (elem.is("img") && elem.parent(".image-attachment").length)
-              glua.openImage(
-                elem.parent().attr("href"),
-                elem.attr("src"),
-                elem.prop("naturalWidth"),
-                elem.prop("naturalHeight"),
-                elem.prop("width"),
-                elem.prop("height"),
-                safe
-              );
-            else if (elem.is("video") && elem.parent(".video-attachment").length) {
-              glua.openVideo(
-                elem.parent().attr("href"),
-                elem.attr("src"),
-                elem.prop("videoWidth"),
-                elem.prop("videoHeight"),
-                null,
-                null,
-                safe
-              );
+          case elem.is(".link"):
+            var href = elem.attr("href"),
+            attach = elem.data("attachment");
+            if (attach && attach.length) {
+              var title = href.split("/").pop(),
+              safe = attach.is(".blocked") || attach.is(".hidden");
+              switch (true) {
+                case attach.is(".image-attachment"):
+                  var img = $("img", attach);
+                  glua.openImage(
+                    title,
+                    img.attr("src"),
+                    img.prop("naturalWidth"),
+                    img.prop("naturalHeight"),
+                    img.prop("width"),
+                    img.prop("height"),
+                    safe
+                  );
+                  break;
+                case attach.is(".video-attachment"):
+                  var video = $("video", attach);
+                  glua.openVideo(
+                    title,
+                    video.attr("src"),
+                    video.prop("videoWidth"),
+                    video.prop("videoHeight"),
+                    null,
+                    null,
+                    safe
+                  );
+                  break;
+                case attach.is(".audio-attachment"):
+                  var audio = $("audio", attach);
+                  glua.openAudio(
+                    title,
+                    audio.attr("src"),
+                    300,
+                    54,
+                    null,
+                    null,
+                    safe
+                  );
+                  break;
+              }
             } else
-              glua.openPage(elem.closest("[href!=''][href]").attr("href"), safe);
+              glua.openPage(href);
+            break;
+          case elem.is(".safe-link"):
+            glua.openPage(elem.attr("href"), true);
+            break;
+          case elem.is("img") && elem.parent().is(".image-attachment"):
+            var attach = elem.parent(),
+            title = attach.attr("href").split("/").pop();
+            glua.openImage(
+              title,
+              elem.attr("src"),
+              elem.prop("naturalWidth"),
+              elem.prop("naturalHeight"),
+              elem.prop("width"),
+              elem.prop("height"),
+              attach.is(".blocked") || attach.is(".hidden")
+            );
             break;
         }
 
@@ -1421,6 +1476,7 @@ return [[<html>
       panelIsOpen = false;
       if (convars.bonchat_auto_dismiss) dismissMessages(); // auto dismiss messages
       resetLoadBtn(totalMsgs); // clears any hidden messages loaded with the load button
+      $(".video-attachment video, .audio-attachment audio").trigger("pause").prop("currentTime", 0);
       body.addClass("panel-closed"); // hide some elements when the panel is closed
       scrollToBottom(); // reset scroll
       msgContainer.children().startFadeOut(3000, 10000); // start fading out messages

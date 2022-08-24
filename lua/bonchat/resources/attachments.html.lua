@@ -74,10 +74,12 @@ return [[<html>
       }
 
       .attachment {
+        margin-right: 4px;
         margin-bottom: 4px;
         padding: 4px;
-        background-color: rgba(255,255,255,0.5);
+        background-color: rgba(0,0,0,0.2);
         border-radius: 4px;
+        overflow: hidden;
       }
       .attachment-button {
         float: right;
@@ -91,7 +93,6 @@ return [[<html>
         font-weight: bold;
       }
       .attachment-label {
-        display: inline-block;
         margin-top: 4px;
         padding: 4px;
         background-color: rgba(0,0,0,0.5);

@@ -63,7 +63,7 @@ local PANEL = {
     self.dhtml:SetKeyboardInputEnabled(true)
     self.dhtml:SetMouseInputEnabled(true)
   end,
-  OpenMedia = function(self, resource, title, url, w, h, minW, minH)
+  OpenMedia = function(self, resource, title, url, w, h, minW, minH, callback)
     minW, minH = fixDimensions(minW or w, minH or h)
     w, h = fixDimensions(w, h)
 
@@ -77,6 +77,7 @@ local PANEL = {
 
     self.dhtml.OnDocumentReady = function(self)
       self:CallJSParams("loadElem('%s')", string.JavascriptSafe(url))
+      if callback then callback() end
     end
 
     self:Show()
@@ -87,7 +88,14 @@ local PANEL = {
     self:OpenMedia("browser_image.html", title, url, w, h, minW, minH)
   end,
   OpenVideo = function(self, title, url, w, h, minW, minH)
-    self:OpenMedia("browser_video.html", title, url, w, h, minW, minH)
+    self:OpenMedia("browser_video.html", title, url, w, h, minW, minH, function()
+      self.dhtml:CallJSParams("elem.prop('volume', %f)", BonChat.CVAR.GetAttachVolume())
+    end)
+  end,
+  OpenAudio = function(self, title, url, w, h, minW, minH)
+    self:OpenMedia("browser_audio.html", title, url, w, h, minW, minH, function()
+      self.dhtml:CallJSParams("elem.prop('volume', %f)", BonChat.CVAR.GetAttachVolume())
+    end)
   end
 }
 

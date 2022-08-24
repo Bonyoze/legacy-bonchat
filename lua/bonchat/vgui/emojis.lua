@@ -257,7 +257,7 @@ local PANEL = {
       if not self.lastQuery then return end
 
       -- append loading label
-      dhtml:CallJSParams("getCategoryByID('%s').appendLoadBtn(LOADING_LABEL_TEXT, 1)", self.id)
+      dhtml:CallJSParams("getCategoryByID('%s').appendLoadBtn(LOADING_LABEL_TEXT, 1).show()", self.id)
       
       local currSearch = self.lastSearch
 

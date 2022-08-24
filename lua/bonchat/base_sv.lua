@@ -1,14 +1,17 @@
--- send client-side scripts
+-- shared scripts
+AddCSLuaFile("bonchat/convars.lua")
+-- client scripts
 AddCSLuaFile("bonchat/message.lua")
 AddCSLuaFile("bonchat/custom_chat.lua")
-
+-- resource files
 AddCSLuaFile("bonchat/resources/browser_image.html.lua")
 AddCSLuaFile("bonchat/resources/browser_video.html.lua")
+AddCSLuaFile("bonchat/resources/browser_audio.html.lua")
 AddCSLuaFile("bonchat/resources/chatbox.html.lua")
 AddCSLuaFile("bonchat/resources/emojis.html.lua")
 AddCSLuaFile("bonchat/resources/attachments.html.lua")
 AddCSLuaFile("bonchat/resources/emoji_data.json.lua")
-
+-- vgui panels
 AddCSLuaFile("bonchat/vgui/dhtml.lua")
 AddCSLuaFile("bonchat/vgui/browser.lua")
 AddCSLuaFile("bonchat/vgui/chatbox.lua")
@@ -16,6 +19,9 @@ AddCSLuaFile("bonchat/vgui/settings.lua")
 AddCSLuaFile("bonchat/vgui/emojis.lua")
 AddCSLuaFile("bonchat/vgui/attachments.lua")
 AddCSLuaFile("bonchat/vgui/frame.lua")
+
+include("bonchat/convars.lua")
+include("bonchat/custom_chat.lua")
 
 util.AddNetworkString("bonchat_say")
 util.AddNetworkString("bonchat_istyping")
@@ -72,6 +78,3 @@ net.Receive("bonchat_istyping", function(_, ply)
     net.WriteBool(typing)
   net.SendOmit(ply)
 end)
-
--- custom game messages for BonChat
-include("bonchat/custom_chat.lua")

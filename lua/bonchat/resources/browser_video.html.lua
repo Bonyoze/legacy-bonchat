@@ -9,13 +9,14 @@ return [[<html>
       }
 
       video {
-        width: 100%;
-        height: 100%;
+        display: block;
+        max-width: 100%;
+        max-height: 100%;
       }
     </style>
   </head>
   <body>
-    <video controls autoplay loop>
+    <video controls controlsList="nofullscreen nodownload" autoplay>
   </body>
   <script type="text/javascript" src="asset://garrysmod/html/js/thirdparty/jquery.js"></script>
   <script type="text/javascript">

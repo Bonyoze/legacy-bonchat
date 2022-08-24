@@ -1,7 +1,3 @@
-BonChat = BonChat or {}
-
--- convars
-
 BonChat.CVAR = {}
 
 -- server cvars
@@ -17,6 +13,7 @@ BonChat.CVAR.AUTO_DISMISS = "bonchat_auto_dismiss"
 BonChat.CVAR.LINK_MAX_LENGTH = "bonchat_link_max_length"
 BonChat.CVAR.LOAD_ATTACHMENTS = "bonchat_load_attachments"
 BonChat.CVAR.ATTACH_MAX_HEIGHT = "bonchat_attach_max_height"
+BonChat.CVAR.ATTACH_AUTOPLAY = "bonchat_attach_autoplay"
 BonChat.CVAR.ATTACH_VOLUME = "bonchat_attach_volume"
 BonChat.CVAR.SHOW_TONE_EMOJIS = "bonchat_show_tone_emojis"
 
@@ -32,6 +29,7 @@ CreateClientConVar(BonChat.CVAR.AUTO_DISMISS, 1, true, nil, "Automatically dismi
 CreateClientConVar(BonChat.CVAR.LINK_MAX_LENGTH, 128, true, nil, "Set the character limit of links", 8, 256)
 CreateClientConVar(BonChat.CVAR.LOAD_ATTACHMENTS, 1, true, nil, "Automatically load attachments")
 CreateClientConVar(BonChat.CVAR.ATTACH_MAX_HEIGHT, 40, true, nil, "Set the max height for attachments", 1, 100)
+CreateClientConVar(BonChat.CVAR.ATTACH_AUTOPLAY, 0, true, nil, "Automatically play attachments upon loading", 0, 1)
 CreateClientConVar(BonChat.CVAR.ATTACH_VOLUME, 0.5, true, nil, "Set the volume for attachments", 0, 1)
 CreateClientConVar(BonChat.CVAR.SHOW_TONE_EMOJIS, 0, true, nil, "Show results for skin tone emojis when searching in the catalog")
 
@@ -75,6 +73,10 @@ function BonChat.CVAR.GetAttachMaxHeight()
   return GetConVar(BonChat.CVAR.ATTACH_MAX_HEIGHT):GetInt()
 end
 
+function BonChat.CVAR.GetAttachAutoplay()
+  return GetConVar(BonChat.CVAR.ATTACH_AUTOPLAY):GetBool()
+end
+
 function BonChat.CVAR.GetAttachVolume()
   return GetConVar(BonChat.CVAR.ATTACH_VOLUME):GetFloat()
 end
@@ -89,18 +91,4 @@ end
 
 function BonChat.RemoveConvarCallback(name)
   cvars.RemoveChangeCallback(name, "bonchat")
-end
-
-local plyMeta = FindMetaTable("Player")
-
-BonChat.oldPlyIsTyping = BonChat.oldPlyIsTyping or plyMeta.IsTyping
-function plyMeta:IsTyping()
-  return BonChat.oldPlyIsTyping(self) or self.bonchatIsTyping
-end
-
-if SERVER then
-  include("bonchat/base_sv.lua")
-  AddCSLuaFile("bonchat/base_cl.lua")
-else
-  include("bonchat/base_cl.lua")
 end

@@ -1,10 +1,3 @@
-surface.CreateFont("BonChatSettings", {
-	font = "Arial",
-	extended = false,
-	size = 18,
-  weight = 600
-})
-
 local PANEL = {
   Init = function(self)
     self:SetTitle("Chat Settings")
@@ -21,33 +14,42 @@ local PANEL = {
     self.panel:Dock(FILL)
     self.panel:GetVBar():SetWide(0)
 
-    -- reload chatbox button
-    self:AddButton("Reload Chatbox", function() RunConsoleCommand("bonchat_reload") end)
-    -- clear chat button
+    -- add elements
+
+    self:AddButton("Reload Panel", function() RunConsoleCommand("bonchat_reload") end)
     self:AddButton("Clear Chat", function() RunConsoleCommand("bonchat_clear") end)
-    -- max msgs slider
-    local cvarMaxMsgs = GetConVar(BonChat.CVAR.MAX_MSGS)
-    self:AddSlider("Max Messages", BonChat.CVAR.MAX_MSGS, cvarMaxMsgs:GetInt(), cvarMaxMsgs:GetMin(), cvarMaxMsgs:GetMax(), 0)
-    -- link length slider
-    local cvarLinkLength = GetConVar(BonChat.CVAR.LINK_MAX_LENGTH)
-    self:AddSlider("Max Link Length", BonChat.CVAR.LINK_MAX_LENGTH, cvarLinkLength:GetInt(), cvarLinkLength:GetMin(), cvarLinkLength:GetMax(), 0)
-    -- chat tick toggle
+
+    self:AddLabel("Messages")
     self:AddCheckbox("Play chat sound", BonChat.CVAR.CHAT_TICK, BonChat.CVAR.GetChatTick())
-    -- auto dismiss toggle
     self:AddCheckbox("Auto dismiss messages", BonChat.CVAR.AUTO_DISMISS, BonChat.CVAR.GetAutoDismiss())
-    -- image embeds toggle
+    local cvarMaxMsgs = GetConVar(BonChat.CVAR.MAX_MSGS)
+    self:AddSlider("Max messages", BonChat.CVAR.MAX_MSGS, cvarMaxMsgs:GetInt(), cvarMaxMsgs:GetMin(), cvarMaxMsgs:GetMax())
+    local cvarLinkLength = GetConVar(BonChat.CVAR.LINK_MAX_LENGTH)
+    self:AddSlider("Link max length", BonChat.CVAR.LINK_MAX_LENGTH, cvarLinkLength:GetInt(), cvarLinkLength:GetMin(), cvarLinkLength:GetMax())
+
+    self:AddLabel("Attachments")
     self:AddCheckbox("Load attachments", BonChat.CVAR.LOAD_ATTACHMENTS, BonChat.CVAR.GetLoadAttachments())
-    -- image height slider
+    self:AddCheckbox("Autoplay attachments", BonChat.CVAR.ATTACH_AUTOPLAY, BonChat.CVAR.GetAttachAutoplay())
     local cvarAttachHeight = GetConVar(BonChat.CVAR.ATTACH_MAX_HEIGHT)
-    self:AddSlider("Attachment Max Height", BonChat.CVAR.ATTACH_MAX_HEIGHT, cvarAttachHeight:GetInt(), cvarAttachHeight:GetMin(), cvarAttachHeight:GetMax(), 0)
-    -- skin tone emojis toggle
+    self:AddSlider("Attachment max height", BonChat.CVAR.ATTACH_MAX_HEIGHT, cvarAttachHeight:GetInt(), cvarAttachHeight:GetMin(), cvarAttachHeight:GetMax())
+    local cvarAttachVolume = GetConVar(BonChat.CVAR.ATTACH_VOLUME)
+    self:AddSlider("Attachment volume", BonChat.CVAR.ATTACH_VOLUME, cvarAttachVolume:GetFloat(), cvarAttachVolume:GetMin(), cvarAttachVolume:GetMax(), 2)
+
+    self:AddLabel("Misc")
     self:AddCheckbox("Show results for skin tone emojis", BonChat.CVAR.SHOW_TONE_EMOJIS, BonChat.CVAR.GetShowToneEmojis())
   end,
   AddElement = function(self, class)
     local elem = self.panel:Add(class)
     elem:Dock(TOP)
-    elem:DockMargin(4, 0, 4, 4)
+    elem:DockMargin(6, 0, 6, 4)
     return elem
+  end,
+  AddLabel = function(self, text)
+    local lbl = self:AddElement("DLabel")
+    lbl:DockMargin(0, 8, 0, 4)
+    lbl:SetText(text)
+    lbl:SetFont("ChatFont")
+    return lbl
   end,
   AddButton = function(self, text, doClick)
     local btn = self:AddElement("DButton")
@@ -57,12 +59,13 @@ local PANEL = {
   end,
   AddSlider = function(self, text, cvar, default, min, max, decimals)
     local slider = self:AddElement("DNumSlider")
+    slider:DockMargin(4, -8, 4, 0)
     slider:SetText(text)
     slider:SetConVar(cvar)
     slider:SetDefaultValue(default)
     slider:SetMin(min)
     slider:SetMax(max)
-    slider:SetDecimals(decimals)
+    slider:SetDecimals(decimals or 0)
     return slider
   end,
   AddCheckbox = function(self, text, cvar, default)

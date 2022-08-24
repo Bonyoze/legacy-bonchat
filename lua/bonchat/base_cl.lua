@@ -1,3 +1,4 @@
+include("bonchat/convars.lua")
 include("bonchat/message.lua")
 include("bonchat/vgui/dhtml.lua")
 include("bonchat/vgui/browser.lua")
@@ -51,6 +52,8 @@ addJSConVar(BonChat.CVAR.AUTO_DISMISS)
 addJSConVar(BonChat.CVAR.LINK_MAX_LENGTH)
 addJSConVar(BonChat.CVAR.LOAD_ATTACHMENTS)
 addJSConVar(BonChat.CVAR.ATTACH_MAX_HEIGHT)
+addJSConVar(BonChat.CVAR.ATTACH_AUTOPLAY)
+addJSConVar(BonChat.CVAR.ATTACH_VOLUME)
 
 function BonChat.SendInfoMessage(str)
   local msg = BonChat.Message()
@@ -184,6 +187,11 @@ end
 function BonChat.OpenVideo(title, url, w, h, minW, minH, safe)
   if safe or BRANCH ~= "x86-64" then return BonChat.OpenURL(url) end
   BonChat.frame.browser:OpenVideo(title, url, w, h, minW, minH)
+end
+
+function BonChat.OpenAudio(title, url, w, h, minW, minH, safe)
+  if safe or BRANCH ~= "x86-64" then return BonChat.OpenURL(url) end
+  BonChat.frame.browser:OpenAudio(title, url, w, h, minW, minH)
 end
 
 local imagePasteCache = {}

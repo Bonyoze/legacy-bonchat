@@ -89,13 +89,12 @@ return [[<html>
         background-color: rgba(50,50,50,0.35);
       }
 
-      .category-emojis .load-button-wrapper {
-        margin-top: 0.5rem;
-        width: 100%;
-        text-align: center;
-      }
       .category-emojis {
         margin: 0.125rem;
+      }
+      .category-emojis .load-button-wrapper {
+        width: 100%;
+        text-align: center;
       }
 
       .load-button {
@@ -248,8 +247,6 @@ return [[<html>
       $(".load-button-wrapper", emojis).remove();
 
       if (data.length) { // load emojis
-        this.show();
-
         for (var i = 0; i < Math.ceil(data.length / 10) * 10; i++) {
           var item = data[i],
           valid = false;
@@ -308,6 +305,7 @@ return [[<html>
       scrolled = isFullyScrolled();
 
       $("<div class='load-button-wrapper'>")
+        .css("margin-top", emojis.children().length ? "0.5rem" : "0")
         .append($("<span>")
           .attr("class", isLabel ? "loading-label" : "load-button")
           .text(text)

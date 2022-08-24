@@ -62,6 +62,7 @@ local PANEL = {
     self:AddFunc("openPage", BonChat.OpenPage)
     self:AddFunc("openImage", BonChat.OpenImage)
     self:AddFunc("openVideo", BonChat.OpenVideo)
+    self:AddFunc("openAudio", BonChat.OpenAudio)
     self:AddFunc("pasteImage", BonChat.PasteImage)
 
     self:AddFunc("prependHiddenMessages", function(currTotal) self:PrependHiddenMessages(currTotal) end)
