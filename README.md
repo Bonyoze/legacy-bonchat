@@ -15,32 +15,31 @@ Should work on any branch, but intended for usage on `x86-64` [Read this](https:
 ---
 
 ### To Do:
-`✅Finished` `➖Started on` `❌Not started`
+`✅Finished` `➖Working on` `❌Not started`
 - ➖ derma panels
   - ✅ frame
   - ✅ chatbox
   - ✅ browser
   - ➖ settings panel
     - ➖ url whitelist editing
-    - ❌ max message render height
-    - ❌ hiding images/videos
+    - ✅ hiding attachments
     - ❌ hiding duplicate message (antispam)
-  - ✅ emoji catalog
+  - ✅ emojis panel
     - ✅ emoji searching
     - ✅ Twemoji
     - ✅ Silkicon
     - ✅ Steam
   - ➖ attachments panel
-    - ✅ images
-    - ❌ videos
-    - ❌ audio
-    - ❌ models
-    - ❌ textures
-    - ❌ sound files
+    - ✅ attachments
+    - ❌ game asset attachments
   - ❌ chat room panel
     - ❌ room creating/joining/leaving
     - ❌ room private messaging
-  - ❌ message context popup
+  - ❌ context popup
+    - ❌ message context
+    - ❌ attachment context
+    - ❌ link context
+    - ❌ emoji context
 - ➖ message sending
   - ✅ inline markdown support
   - ✅ emoji support
@@ -48,15 +47,15 @@ Should work on any branch, but intended for usage on `x86-64` [Read this](https:
     - ✅ Silkicon
     - ✅ Steam
     - ✅ Discord
-  - ➖ media file attachments
-    - ✅ images
-    - ➖ videos
+  - ➖ attachments
+    - ➖ embed
+    - ✅ image
+    - ➖ video
     - ➖ audio
-  - ❌ game asset attachments (some might not be implemented due to complexity)
-    - ❌ models
-    - ❌ textures
-    - ❌ sound files
-  - ❌ chatbox input markdown
+  - ❌ game asset attachments
+    - ❌ model
+    - ❌ texture
+    - ❌ sound
 
 ---
 
