@@ -14,6 +14,19 @@ Should work on any branch, but intended for usage on `x86-64` [Read this](https:
 
 ---
 
+### How to Install:
+
+~~You can subscribe to the addon on the Garry's Mod Steam workshop~~ (will be available after the addon is released)
+
+OR
+
+1. Download the zip and place it in your addons folder `Steam\steamapps\common\GarrysMod\garrysmod\addons`
+2. Extract the zip in the folder and make sure the addon's lua path is `addons\gmod-bonchat\lua`
+3. **RECOMMENDED** Make sure you are on the x86-64 branch of Garry's Mod (you can change this by right clicking the game in your library, going to `Properties...` -> `BETAS` -> select `x86-64 - Chromium + 64-bit binaries`)
+4. **OPTIONAL** Install the [GModCEFCodecFix](https://github.com/solsticegamestudios/GModCEFCodecFix) in order for things like videos to work (a guide can be found in the repository's README) (you should only have to install the codecs once and whenever GMod has an update, you change branches or verify integrity of game files)
+
+---
+
 ### To Do:
 `✅Finished` `➖Working on` `❌Not started`
 - ➖ derma panels
