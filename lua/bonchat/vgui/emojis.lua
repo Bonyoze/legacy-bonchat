@@ -39,13 +39,13 @@ local PANEL = {
     self.dhtml:AddFunc("searchEmojis", function(query) self:SearchEmojis(query) end)
     self.dhtml:AddFunc("loadPage", function(id) self:LoadPage(id) end)
 
-    self.dhtml:SetHTML(BonChat.GetResource("emojis.html"))
+    self.dhtml:SetHTML(BonChat.GetResource("html/emojis.html"))
 
     self.categories = {}
 
     -- default (twemoji)
     do
-      local emojiData = util.JSONToTable(BonChat.GetResource("emoji_data.json"))
+      local emojiData = util.JSONToTable(BonChat.GetResource("shortcode_data.json"))
 
       local function addDefaultCategory(name)
         return self:AddCategory(name, nil, "twemoji")

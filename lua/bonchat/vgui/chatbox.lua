@@ -38,7 +38,7 @@ local optionRules = {
   SHOW_TIMESTAMP    = jsAddClass("show-timestamp")
 }
 
-BonChat.AddConvarCallback(BonChat.CVAR.MAX_MSGS, function(_, _, maxMsgs)
+BonChat.AddConVarCallback(BonChat.CVAR.MAX_MSGS, function(_, _, maxMsgs)
   maxMsgs = tonumber(maxMsgs)
   local chatbox = BonChat.frame.chatbox
   if #chatbox.msgs > maxMsgs then
@@ -108,27 +108,16 @@ local PANEL = {
       end, function(err)
         if err == 1 then
           -- request was successful but received a bad code
-          -- this could mean GMod was blocked from accessing the resource
-          -- but we can still try and load it via bruteforcing every media type until the browser loads one of them
+          -- this could mean GMod was blocked from http requesting the resource
+          -- but we can still try and load it by trying every media type and seeing if the browser is able to display it
           self:CallJSParams(attachElem .. "._loadMedia('%s')", url)
         end
       end)
     end)
 
-    self:SetHTML(BonChat.GetResource("chatbox.html"))
+    self:SetContent(BonChat.GetResource("html/chatbox.html"))
 
     self.OnCursorExited = function(self) BonChat.HideHoverLabel() end
-    
-    -- create emoji lookup table and send to panel
-    local emojiData, emojiLookup = util.JSONToTable(BonChat.GetResource("emoji_data.json")), {}
-
-    for _, v in pairs(emojiData) do
-      for i = 1, #v, 2 do
-        emojiLookup[v[i]] = v[i + 1]
-      end
-    end
-
-    self:CallJSParams("EMOJI_DATA = JSON.parse('%s')", util.TableToJSON(emojiLookup))
 
     local lastEnter = false
     local lastEscape = false
@@ -282,9 +271,6 @@ local PANEL = {
   end,
   Close = function(self)
     self:CallJSParams("PANEL_CLOSE(%d)", #self.msgs)
-  end,
-  UpdateConVar = function(self, name, val)
-    self:CallJSParams("updateConVar('%s', '%s')", string.JavascriptSafe(name), string.JavascriptSafe(val))
   end
 }
 

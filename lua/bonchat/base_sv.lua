@@ -1,16 +1,10 @@
 -- shared scripts
 AddCSLuaFile("bonchat/convars.lua")
+
 -- client scripts
 AddCSLuaFile("bonchat/message.lua")
 AddCSLuaFile("bonchat/custom_chat.lua")
--- resource files
-AddCSLuaFile("bonchat/resources/browser_image.html.lua")
-AddCSLuaFile("bonchat/resources/browser_video.html.lua")
-AddCSLuaFile("bonchat/resources/browser_audio.html.lua")
-AddCSLuaFile("bonchat/resources/chatbox.html.lua")
-AddCSLuaFile("bonchat/resources/emojis.html.lua")
-AddCSLuaFile("bonchat/resources/attachments.html.lua")
-AddCSLuaFile("bonchat/resources/emoji_data.json.lua")
+
 -- vgui panels
 AddCSLuaFile("bonchat/vgui/dhtml.lua")
 AddCSLuaFile("bonchat/vgui/browser.lua")
@@ -19,6 +13,23 @@ AddCSLuaFile("bonchat/vgui/settings.lua")
 AddCSLuaFile("bonchat/vgui/emojis.lua")
 AddCSLuaFile("bonchat/vgui/attachments.lua")
 AddCSLuaFile("bonchat/vgui/frame.lua")
+
+-- resource files
+local function addResources(dir)
+  dir = dir or "bonchat/resources/"
+
+  local files, dirs = file.Find(dir .. "*", "LUA")
+
+  for _, v in ipairs(files) do
+    AddCSLuaFile(dir .. v)
+  end
+
+  for _, v in ipairs(dirs) do
+    addResources(dir .. v .. "/")
+  end
+end
+
+addResources()
 
 include("bonchat/convars.lua")
 include("bonchat/custom_chat.lua")
@@ -44,7 +55,7 @@ net.Receive("bonchat_say", function(_, ply)
     table.insert(attachments, { type = type, value = value })
   end
 
-  MsgN(ply:Nick() .. ": " .. text)
+  MsgN("[" .. os.date("%H:%M:%S") .. "] " .. ply:Nick() .. ": " .. text)
 
   local newData = util.Compress(text)
 

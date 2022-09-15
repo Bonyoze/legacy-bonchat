@@ -1,2 +1,4 @@
 *.html.lua linguist-language=HTML
 *.js.lua linguist-language=JavaScript
+*.css.lua linguist-language=CSS
+*.json.lua linguist-language=JSON

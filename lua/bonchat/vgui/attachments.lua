@@ -28,7 +28,7 @@ local PANEL = {
       self.attachs[attachID] = { type = BonChat.msgAttachTypes.LINK, value = str }
     end)
 
-    self.dhtml:SetHTML(BonChat.GetResource("attachments.html"))
+    self.dhtml:SetHTML(BonChat.GetResource("html/attachments.html"))
 
     self.attachs = {}
     self.attachIDNum = 0

@@ -27,34 +27,6 @@ end)
 
 BonChat.enabled = BonChat.CVAR.GetEnabled()
 
-function BonChat.UpdateJSConVar(name, val)
-  if not IsValid(BonChat.frame) or not IsValid(BonChat.frame.chatbox) then return end
-  BonChat.frame.chatbox:UpdateConVar(name, val)
-end
-
-local jsConVars = {}
-
-function BonChat.UpdateAllJSConVars()
-  for cvar, _ in pairs(jsConVars) do
-    BonChat.UpdateJSConVar(cvar, GetConVar(cvar):GetString())
-  end
-end
-
-local function addJSConVar(cvar)
-  jsConVars[cvar] = true
-  BonChat.AddConvarCallback(cvar, function(name, _, val) BonChat.UpdateJSConVar(name, val) end)
-end
-
--- js convars
-addJSConVar(BonChat.CVAR.MSG_MAX_LENGTH)
-addJSConVar(BonChat.CVAR.MSG_MAX_ATTACHS)
-addJSConVar(BonChat.CVAR.AUTO_DISMISS)
-addJSConVar(BonChat.CVAR.LINK_MAX_LENGTH)
-addJSConVar(BonChat.CVAR.LOAD_ATTACHMENTS)
-addJSConVar(BonChat.CVAR.ATTACH_MAX_HEIGHT)
-addJSConVar(BonChat.CVAR.ATTACH_AUTOPLAY)
-addJSConVar(BonChat.CVAR.ATTACH_VOLUME)
-
 function BonChat.SendInfoMessage(str)
   local msg = BonChat.Message()
   msg:SetDismissible()
@@ -92,7 +64,6 @@ end
 function BonChat.ReloadChat()
   if IsValid(BonChat.frame) then BonChat.frame:Remove() end
   BonChat.frame = vgui.Create("BonChat_Frame")
-  BonChat.UpdateAllJSConVars() -- initialize convar values in the chatbox
 end
 
 function BonChat.ClearChat()

@@ -1,4 +1,4 @@
-local maxW, maxH = ScrW() / 2, ScrH() / 2
+local maxW, maxH = ScrW() / 1.5, ScrH() / 1.5
 
 local function fixDimensions(w, h)
   -- consider frame space
@@ -85,15 +85,15 @@ local PANEL = {
     self.dhtml:RequestFocus()
   end,
   OpenImage = function(self, title, url, w, h, minW, minH)
-    self:OpenMedia("browser_image.html", title, url, w, h, minW, minH)
+    self:OpenMedia("html/browser_image.html", title, url, w, h, minW, minH)
   end,
   OpenVideo = function(self, title, url, w, h, minW, minH)
-    self:OpenMedia("browser_video.html", title, url, w, h, minW, minH, function()
+    self:OpenMedia("html/browser_video.html", title, url, w, h, minW, minH, function()
       self.dhtml:CallJSParams("elem.prop('volume', %f)", BonChat.CVAR.GetAttachVolume())
     end)
   end,
   OpenAudio = function(self, title, url, w, h, minW, minH)
-    self:OpenMedia("browser_audio.html", title, url, w, h, minW, minH, function()
+    self:OpenMedia("html/browser_audio.html", title, url, w, h, minW, minH, function()
       self.dhtml:CallJSParams("elem.prop('volume', %f)", BonChat.CVAR.GetAttachVolume())
     end)
   end
