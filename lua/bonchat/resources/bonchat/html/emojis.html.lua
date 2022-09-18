@@ -1,4 +1,4 @@
-return [[<html>
+<html>
   <head>
     <meta charset="utf-8">
     <style>
@@ -436,4 +436,4 @@ return [[<html>
 
     glua.searchEmojis(""); // initialize
   </script>
-</html>]]
+</html>

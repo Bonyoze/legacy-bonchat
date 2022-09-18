@@ -1,4 +1,4 @@
-return [[<html>
+<html>
   <head>
     <meta charset="utf-8">
     <style>
@@ -297,4 +297,4 @@ return [[<html>
     
     entryInput.focus();
   </script>
-</html>]]
+</html>

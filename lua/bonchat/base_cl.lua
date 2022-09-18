@@ -1,12 +1,14 @@
-include("bonchat/convars.lua")
-include("bonchat/message.lua")
-include("bonchat/vgui/dhtml.lua")
-include("bonchat/vgui/browser.lua")
-include("bonchat/vgui/chatbox.lua")
-include("bonchat/vgui/settings.lua")
-include("bonchat/vgui/emojis.lua")
-include("bonchat/vgui/attachments.lua")
-include("bonchat/vgui/frame.lua")
+include(BonChat.DIR .. "convars.lua")
+include(BonChat.DIR .. "message.lua")
+include(BonChat.DIR .. "net_cl.lua")
+
+include(BonChat.DIR .. "vgui/dhtml.lua")
+include(BonChat.DIR .. "vgui/browser.lua")
+include(BonChat.DIR .. "vgui/chatbox.lua")
+include(BonChat.DIR .. "vgui/settings.lua")
+include(BonChat.DIR .. "vgui/emojis.lua")
+include(BonChat.DIR .. "vgui/attachments.lua")
+include(BonChat.DIR .. "vgui/frame.lua")
 
 -- cvars
 cvars.AddChangeCallback(BonChat.CVAR.ENABLED, function(_, _, new)
@@ -37,13 +39,17 @@ function BonChat.SendInfoMessage(str)
   BonChat.SendMessage(msg)
 end
 
+local color_log = Color(255, 75, 180)
+local color_log2 = Color(200, 200, 200)
+local color_log_err = Color(255, 90, 90)
+
 function BonChat.Log(...)
-  MsgC(Color(255, 0, 105), "[BonChat] ", color_white, ...)
+  MsgC(color_log, "[BonChat] ", color_log2, ...)
   MsgN()
 end
 
 function BonChat.LogError(err, reason)
-  BonChat.Log(err, Color(180, 180, 180), reason and (" (" .. reason .. ")") or "")
+  BonChat.Log(color_log_err, "[ERR] ", color_log2, err .. (reason and " (" .. reason .. ")" or ""))
 end
 
 local sentBranchWarning
@@ -211,7 +217,8 @@ function BonChat.PasteImage(data)
 end
 
 function BonChat.GetResource(name)
-  return include("bonchat/resources/" .. name .. ".lua")
+  local data = BonChat.resources[name]
+  return data and util.Decompress(data)
 end
 
 local attachmentLoadCache = {}
@@ -378,6 +385,10 @@ panelMeta.DrawBlur = function(self, layers, density, alpha)
   end
 end
 
+function BonChat.GetLastPlayerChat()
+  return BonChat.lastPlayerChat or {}
+end
+
 -- concommands
 
 concommand.Add("bonchat_say", function(_, _, _, argStr) BonChat.Say(argStr, 1) end)
@@ -402,40 +413,16 @@ concommand.Add("bonchat_clear", function()
   BonChat.SendInfoMessage(":i:bin: **Chatbox was cleared**")
 end)
 
-function BonChat.GetLastPlayerChat()
-  return BonChat.lastPlayerChat or {}
-end
-
--- player sent a message through the chatbox
-net.Receive("bonchat_say", function()
-  local ply = net.ReadEntity()
-  local text = net.ReadString()
-  local teamChat = net.ReadBool()
-  local isDead = net.ReadBool()
-  local totalAttachs = net.ReadUInt(4)
-  local attachments = {}
-  for i = 1, totalAttachs do
-    local type, value = net.ReadUInt(2), net.ReadString()
-    table.insert(attachments, { type = type, value = value })
-  end
-
-  BonChat.lastPlayerChat = { ply = ply, text = text, teamChat = teamChat, isDead = isDead, attachments = attachments }
-  hook.Run("OnPlayerChat", ply, text, teamChat, isDead)
-  BonChat.lastPlayerChat = {}
-end)
-
--- player is typing in the chatbox
-net.Receive("bonchat_istyping", function()
-  local ply, typing = net.ReadEntity(), net.ReadBool()
-  ply.bonchatIsTyping = typing
-end)
-
 -- initializing
 
-hook.Add("OnGamemodeLoaded", "BonChat_Initialize", BonChat.InitChat)
+hook.Add("InitPostEntity", "BonChat_InitResources", function()
+  net.Start("bonchat_resources")
+  net.SendToServer()
+  BonChat.resources = {}
+end)
 
-if GAMEMODE then
+--[[hook.Add("OnGamemodeLoaded", "BonChat_Init", function()
   BonChat.InitChat()
-end
+end)]]
 
 include("bonchat/custom_chat.lua")

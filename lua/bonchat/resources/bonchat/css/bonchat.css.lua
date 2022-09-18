@@ -1,4 +1,4 @@
-return [[html {
+html {
   font-size: 14px;
   -webkit-user-select: none;
   user-select: none;
@@ -268,4 +268,4 @@ img.emoji {
 .emoji.jumbo {
   width: 3em;
   height: 3em;
-}]]
+}

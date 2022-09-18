@@ -1,4 +1,3 @@
-
 --[[local function toggleChatMode()
   BonChat.chatMode = BonChat.chatMode == 1 and 2 or 1
   BonChat.frame.chatbox:CallJS("applyChatMode(%d)", BonChat.chatMode)
@@ -15,13 +14,13 @@ local function parseColorStyle(clr)
 end
 
 local function jsAddClass(val)
-  return string.format("msg.MSG_WRAPPER.addClass('%s')",
+  return string.format("msg.addClass('%s')",
     string.JavascriptSafe(val)
   )
 end
 
 local function jsSetDataAttr(name, val)
-  return string.format("msg.MSG_WRAPPER.attr('data-%s', '%s')",
+  return string.format("msg.attr('data-%s', '%s')",
     string.JavascriptSafe(name),
     isstring(val) and string.JavascriptSafe(val) or val
   )
@@ -115,7 +114,7 @@ local PANEL = {
       end)
     end)
 
-    self:SetContent(BonChat.GetResource("html/chatbox.html"))
+    self:SetContent(BonChat.GetResource("bonchat/html/chatbox.html"))
 
     self.OnCursorExited = function(self) BonChat.HideHoverLabel() end
 
@@ -132,7 +131,7 @@ local PANEL = {
 
       if not lastEnter and enter then -- on enter press, submit message and close it
         if not self:HasFocus() then return end
-        self:CallJS("glua.say(getText())")
+        self:CallJS("glua.say(getTextClean())")
         BonChat.CloseChat()
       elseif not lastEscape and escape then -- on escape press, close it
         BonChat.CloseChat()
@@ -171,12 +170,12 @@ local PANEL = {
   NewMessage = function(self, msg, prependHidden)
     self:ReadyJS()
 
-    -- create a new message object
+    -- create a new message element
     local id = msg:GetID()
     if id then
-      self:AddJS("var msg = new Message(%d)", id)
+      self:AddJS("var msg = Message.new(%d)", id)
     else
-      self:AddJS("var msg = new Message()")
+      self:AddJS("var msg = Message.new()")
     end
 
     -- apply options
@@ -194,17 +193,17 @@ local PANEL = {
       local t, v = arg.type, arg.value
 
       if t == BonChat.msgArgTypes.TEXT then
-        self:AddJS("msg.appendText('%s')", string.JavascriptSafe(v))
+        self:AddJS("Message.appendText.call(msg, '%s')", string.JavascriptSafe(v))
       elseif t == BonChat.msgArgTypes.COLOR then
-        self:AddJS("msg.setTextColor('rgb(%d,%d,%d)')",
+        self:AddJS("Message.setTextColor.call(msg, 'rgb(%d,%d,%d)')",
           isnumber(v.r) and v.r % 256 or 255,
           isnumber(v.g) and v.g % 256 or 255,
           isnumber(v.b) and v.b % 256 or 255
         )
       elseif t == BonChat.msgArgTypes.MARKDOWN then
-        self:AddJS("msg.appendMarkdown('%s')", string.JavascriptSafe(v))
+        self:AddJS("Message.appendMarkdown.call(msg, '%s')", string.JavascriptSafe(v))
       elseif t == BonChat.msgArgTypes.PLAYER then
-        self:AddJS("msg.appendPlayer('%s', '%s', '%s')",
+        self:AddJS("Message.appendPlayer.call(msg, '%s', '%s', '%s')",
           string.JavascriptSafe(v.name),
           v.color and parseColorStyle(v.color) or "",
           string.JavascriptSafe(v.steamID or "")
@@ -219,14 +218,14 @@ local PANEL = {
       local t, v = attachment.type, attachment.value
 
       if t == BonChat.msgAttachTypes.LINK then
-        self:AddJS("msg.appendAttachment('%s')", string.JavascriptSafe(v))
+        self:AddJS("Message.appendAttachment.call(msg, '%s')", string.JavascriptSafe(v))
       elseif t == BonChat.msgAttachTypes.GAME then
         -- todo: game asset attachments
       end
     end
 
     -- send the message element
-    self:AddJS("msg.send(%d)", prependHidden and 1 or 0)
+    self:AddJS("sendMessage(msg)")
 
     self:RunJS()
   end,

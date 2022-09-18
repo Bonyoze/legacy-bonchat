@@ -1,8 +1,8 @@
-return [[<html>
+<html>
   <head>
     <meta charset="utf-8">
     <style>
-      PRELUA: return BonChat.GetResource("css/bonchat.css")
+      PRELUA: return BonChat.GetResource("bonchat/css/bonchat.css")
     </style>
   </head>
   <body>
@@ -20,10 +20,11 @@ return [[<html>
   <script type="text/javascript" src="asset://garrysmod/html/js/thirdparty/jquery.js"></script>
   <!-- inject libs -->
   <script>
-    PRELUA: return BonChat.GetResource("js/lib/util.js")
-    PRELUA: return BonChat.GetResource("js/lib/convars.js")
-    PRELUA: return BonChat.GetResource("js/lib/markdown.js")
-    PRELUA: return BonChat.GetResource("js/lib/emojis.js")
+    PRELUA: return BonChat.GetResource("bonchat/js/lib/util.js")
+    PRELUA: return BonChat.GetResource("bonchat/js/lib/convars.js")
+    PRELUA: return BonChat.GetResource("bonchat/js/lib/markdown.js")
+    PRELUA: return BonChat.GetResource("bonchat/js/lib/emojis.js")
+    PRELUA: return BonChat.GetResource("bonchat/js/constructor/Message.js")
   </script>
   <!-- add convars -->
   POSTLUA:
@@ -40,7 +41,7 @@ return [[<html>
   :ENDLUA
   <!-- convar callbacks -->
   <script>
-    // jquery object methods
+    // jQuery object methods
     jQuery.fn.applyLinkMaxLength = function() {
       this.each(function() {
         var link = $(this),
@@ -62,69 +63,16 @@ return [[<html>
     };
 
     convars.addConVarCallback("bonchat_link_max_length", function() {
-      jQuery.fn.applyLinkMaxLength.call($(".link"));
+      $(".link").applyLinkMaxLength();
     });
     convars.addConVarCallback("bonchat_attach_max_height", function() {
-      jQuery.fn.applyAttachMaxHeight.call($(".attachment"));
+      $(".attachment").applyAttachMaxHeight();
     });
     convars.addConVarCallback("bonchat_attach_volume", function() {
-      jQuery.fn.applyAttachVolume.call($(".video-attachment, .audio-attachment"));
+      $(".video-attachment, .audio-attachment").applyAttachVolume();
     });
   </script>
-  <!-- misc functions -->
-  <script>
-    function pad(n) {
-      return ("00" + n).slice(-2);
-    }
-
-    function getTimestampText(s) { // H:MM AM/PM
-      s = s - new Date().getTimezoneOffset() * 60000;
-      var ms = s % 1000;
-      s = (s - ms) / 1000;
-      var secs = s % 60;
-      s = (s - secs) / 60;
-      var mins = s % 60;
-      var hrs = (s - mins) / 60;
-
-      return ((hrs - 1) % 12 + 1) + ":" + pad(mins) + " " + (hrs % 24 >= 12 ? "PM" : "AM");
-    }
-
-    function getURLWhitelist() {
-      var svList = convars.getString("bonchat_sv_url_whitelist").split(","),
-      clList = convars.getString("bonchat_cl_url_whitelist").split(","),
-      list = svList.concat(clList);
-
-      // remove duplicates
-      list = list.filter(function(item, index) {
-        return list.indexOf(item) == index;
-      });
-
-      return list;
-    }
-
-    function isWhitelistedURL(href) {
-      var a = document.createElement("a");
-      a.href = href;
-      var domain = a.host.replace(/^www\./, "") + a.pathname;
-      return this.getURLWhitelist().some(function(str) {
-        var target = str.replace(/^www\./, "");
-        if (target.indexOf("/") == -1) target += "/";
-        return domain.slice(0, target.length) == target;
-      });
-    }
-
-    function getUTF8ByteLength(str) {
-      var s = str.length;
-      for (var i = str.length - 1; i >= 0; i--) {
-        var code = str.charCodeAt(i);
-        if (code > 0x7f && code <= 0x7ff) s++;
-        else if (code > 0x7ff && code <= 0xffff) s += 2;
-        if (code >= 0xdc00 && code <= 0xdfff) i--; // trail surrogate
-      }
-      return s;
-    }
-  </script>
-  <!-- main script -->
+  <!-- defines -->
   <script>
     const body = $("body"),
     chatbox = $("#chatbox"),
@@ -135,7 +83,6 @@ return [[<html>
     entryInput = $("#entry-input"),
     entryButton = $("#entry-button");
 
-    // strings for elements whose text is updated by js
     const MSG_PUBLIC_CHAT_TEXT = "Send a message in public chat",
     MSG_TEAM_CHAT_TEXT = "Send a message in team chat",
     LOAD_BTN_TEXT = " hidden messages — Click to load",
@@ -153,24 +100,28 @@ return [[<html>
       util.scrollToBottom.call(chatbox);
     }
 
-    // get clean text from entry
-    function getText() {
-      return entryInput.text().replace(/\u00A0/g, " "); // converts nbsp characters to spaces
+    function pad(n) {
+      return ("00" + n).slice(-2);
     }
 
-    // append text into the input safely
-    function insertText(text) {
-      text = text.replace(/[\u000a\u000d\u2028\u2029\u0009]/g, ""); // prevent new lines and tab spaces
-      var len = text.length,
-      maxLen = convars.bonchat_msg_max_length - getUTF8ByteLength(getText()) + getUTF8ByteLength(document.getSelection().toString());
-      if (len > maxLen) {
-        text = text.substring(0, maxLen); // make sure it won't exceed the char limit
-        glua.playSound("resource/warning.wav");
-      }
-      if (text) {
-        document.execCommand("insertText", false, text);
-        entryInput.scrollLeft(entryInput.get(0).scrollWidth);
-      }
+    function getTimestampText(s) { // H:MM AM/PM
+      s = s - new Date().getTimezoneOffset() * 60000;
+      var ms = s % 1000;
+      s = (s - ms) / 1000;
+      var secs = s % 60;
+      s = (s - secs) / 60;
+      var mins = s % 60;
+      var hrs = (s - mins) / 60;
+
+      return ((hrs - 1) % 12 + 1) + ":" + pad(mins) + " " + (hrs % 24 >= 12 ? "PM" : "AM");
+    }
+
+    function getTextClean() {
+      return util.getTextClean.call(entryInput);
+    }
+
+    function insertTextSafe(text) {
+      return util.insertTextSafe.call(entryInput, text);
     }
 
     function updateLoadBtn(total) {
@@ -198,9 +149,7 @@ return [[<html>
     }
 
     function dismissMessages() {
-      $(".dismiss-button").each(function() {
-        glua.dismissMessage($(this).parents(".message").data("id"));
-      });
+      $(".dismissible").each(function() { glua.dismissMessage($(this).data("id")) });
     }
 
     function restartImageAnims() {
@@ -217,6 +166,114 @@ return [[<html>
       entryButton.attr("src", "asset://garrysmod/materials/icon16/" + (mode == 1 ? "world" : "group") + "_edit.png");
     }
 
+    jQuery.fn.startFadeOut = function(duration, delay) {
+      var now = Date.now();
+      return this.each(function() {
+        var e = $(this),
+          timeSinceSent = now - e.data("sendTime"),
+          opac = Math.max((duration - Math.max(timeSinceSent - delay, 0)) / duration, 0);
+        if (opac == 0)
+          e.css("opacity", "0");
+        else {
+          var transition = "opacity "
+            + Math.max(duration - Math.max(timeSinceSent - delay, 0), 0) // new duration
+            + "ms linear "
+            + Math.max(delay - timeSinceSent, 0) // new delay
+            + "ms";
+          e.css({
+            "opacity": opac, // starting opacity
+            "-webkit-transition": transition,
+            "transition": transition,
+            "opacity": "0"
+          });
+        }
+      });
+    };
+
+    jQuery.fn.resetFadeOut = function() {
+      return this.css({
+        "-webkit-transition": "initial",
+        "transition": "initial",
+        "opacity": "initial"
+      });
+    };
+
+    function sendMessage(elem, prependHidden) {
+      var content = $(".message-content", elem),
+      attachments = $(".message-attachments", elem);
+
+      // set send time
+      elem.data("sendTime", Date.now());
+
+      var scrolled = isFullyScrolled();
+
+      // show dismiss button
+      if (elem.hasClass("dismissible")) content.prepend($("<span class='dismiss-button'>"));
+
+      // show timestamp
+      if (elem.hasClass("show-timestamp")) content.prepend($("<span class='timestamp'>").text(getTimestampText(elem.data("sendTime"))));
+      
+      // load link attachments
+      /*var seenURLs = {};
+      elem.find(".link").each(function() {
+        if (attachments.children().length >= convars.getInt("bonchat_msg_max_attachments")) return;
+
+        var link = $(this),
+        url = link.attr("href");
+
+        if (seenURLs[url] || !isWhitelistedURL(url)) return;
+        seenURLs[url] = true;
+
+        // try to load attachment
+        var attach = elem.appendAttachment(url)
+          .on("attachment:load", function() { // success
+            var scrolled = isFullyScrolled();
+            link.data("attachment", attach);
+            attach.off().show();
+            if (scrolled) scrollToBottom();
+          })
+          .on("attachment:error", function() {
+            attach.remove();
+          })
+          .hide();
+      });*/
+      
+      // load emojis
+      elem.find(".pre-emoji").each(function() {
+        var pre = $(this),
+        url = pre.attr("src"),
+        img = $("<img class='emoji'>")
+          .on("load", function() {
+            img.off();
+            // replace it with the loaded image
+            pre.replaceWith(img.attr("alt", pre.text()));
+          })
+          .on("error", function() {
+            img.remove();
+          })
+          .attr("src", url);
+      });
+
+      elem.find(".link").applyLinkMaxLength();
+
+      if (prependHidden)
+        elem.prependTo(msgContainer); // prepend the hidden message
+      else
+        elem.appendTo(msgContainer); // append the new message
+
+      // remove oldest message if exceeding 100 total
+      if (!prependHidden) {
+        var msgs = msgContainer.children();
+        if (msgs.length > 100) msgs.first().remove();
+      }
+
+      if (scrolled || !panelIsOpen) scrollToBottom();
+
+      if (!panelIsOpen) elem.startFadeOut(3000, 10000); // start fade out animation
+    }
+  </script>
+  <!-- listeners -->
+  <script>
     loadBtn.on("click", function() {
       loadBtn
         .addClass("loading")
@@ -225,7 +282,7 @@ return [[<html>
     });
 
     entryButton.on("click", function() {
-      glua.say(getText());
+      glua.say(getTextClean());
       entryInput
         .text("")
         .focus();
@@ -238,12 +295,12 @@ return [[<html>
       .on("keydown", function(e) { // prevent default tab functionality
         if (e.which == 9) { // toggle the chat mode on tab
           e.preventDefault();
-          glua.onTabKey(getText());
+          glua.onTabKey(getTextClean());
         }
       })
       .on("keypress", function(e) {
         // prevent registering certain keys and exceeding the char limit
-        if (getUTF8ByteLength(getText() + String.fromCharCode(e.which)) > convars.bonchat_msg_max_length) {
+        if (util.getUTF8ByteLength(getTextClean() + String.fromCharCode(e.which)) > convars.bonchat_msg_max_length) {
           glua.playSound("resource/warning.wav");
           return false;
         }
@@ -263,7 +320,7 @@ return [[<html>
 
           if (!foundText && item.kind == "string" && item.type.match("^text/plain")) {
             foundText = true;
-            item.getAsString(insertText);
+            item.getAsString(insertTextSafe);
           } else if (!foundImage && item.kind == "file" && item.type.match("^image/")) {
             foundImage = true;
             var file = item.getAsFile(),
@@ -288,7 +345,7 @@ return [[<html>
         switch (true) {
           case elem.is(".emoji"): // clicked on an emoji
             entryInput.focus();
-            insertText(elem.attr("alt") + " "); // paste the emoji into the entry
+            insertTextSafe(elem.attr("alt") + " "); // paste the emoji into the entry
             break;
           case elem.is(".dismiss-button"): // clicked on a msg dismiss button
             glua.dismissMessage(elem.parents(".message").data("id"));
@@ -378,9 +435,10 @@ return [[<html>
         clearTimeout(hoverLabelTimeout);
         glua.hideHoverLabel();
       });
-    
+  </script>
+  <script>
     // functions only called by GLua when the panel entity opens or closes
-
+    
     function PANEL_OPEN(mode) {
       panelIsOpen = true;
       applyChatMode(mode); // set chat mode (public/team)
@@ -406,4 +464,4 @@ return [[<html>
       if (!panelIsOpen) scrollToBottom();
     }, 100);
   </script>
-</html>]]
+</html>

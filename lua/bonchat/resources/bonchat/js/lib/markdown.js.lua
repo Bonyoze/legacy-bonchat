@@ -1,4 +1,4 @@
-return [[(function() {
+(function() {
   if (window.markdown) return;
 
   const SANITIZE_TEXT_REGEX = /[<>&"'/`]/g,
@@ -11,6 +11,35 @@ return [[(function() {
     "/": "&#x2F;",
     "`": "&#96;"
   };
+
+  function sanitizeText(text) {
+    return text.replace(SANITIZE_TEXT_REGEX, function(char) {
+      return SANITIZE_TEXT_CODES[char];
+    });
+  }
+
+  function htmlTag(tagName, content, attributes, isClosed) {
+    attributes = attributes || {};
+    isClosed = typeof isClosed !== "undefined" ? isClosed : true;
+
+    var attributeString = "";
+    for (var attr in attributes) {
+      var attribute = attributes[attr];
+      // removes falsey attributes
+      if (Object.prototype.hasOwnProperty.call(attributes, attr) && attribute) {
+        attributeString += " " +
+          sanitizeText(attr) + '="' +
+          sanitizeText(attribute) + '"';
+        }
+    }
+
+    var unclosedTag = "<" + tagName + attributeString + ">";
+
+    if (isClosed)
+      return unclosedTag + content + "</" + tagName + ">";
+    else
+      return unclosedTag;
+  }
 
   window.markdown = {
     _rules: {
@@ -32,7 +61,7 @@ return [[(function() {
           };
         },
         html: function(node, output) {
-          return this.htmlTag("span", this.htmlTag("span", output(node.content)), { class: "spoiler" });
+          return htmlTag("span", htmlTag("span", output(node.content)), { class: "spoiler" });
         }
       },
       emoji: {
@@ -40,37 +69,41 @@ return [[(function() {
         parse: function(capture) {
           return {
             originalText: capture[1],
-            source: capture[2],
+            group: capture[2],
             name: capture[3]
           };
         },
         html: function(node) {
-          var text = this.sanitizeText(node.originalText);
-          switch (node.source ? node.source.toLowerCase() : "default") {
-            case "default": // use twemoji if not set
-              var char = getEmojiByShortcode(node.name);
-              if (char) {
-                return this.htmlTag("span", text, {
-                  class: "pre-emoji",
-                  src: buildTwemojiURL(char)
-                });
-              } else
+          var text = sanitizeText(node.originalText),
+          group;
+
+          if (node.group)
+            switch (node.group.toLowerCase()) {
+              case "twemoji":
+              case "t":
+                group = "twemoji";
+              case "steam":
+              case "s":
+                group = "steam";
+                break;
+              case "icon16":
+              case "i":
+                group = "icon16";
+                break;
+              default:
                 return text;
-            case "steam":
-            case "s":
-              return this.htmlTag("span", text, {
-                class: "pre-emoji",
-                src: buildSteamEmojiURL(node.name)
-              });
-            case "icon":
-            case "i":
-              return this.htmlTag("span", text, {
-                class: "pre-emoji",
-                src: buildSilkiconURL(node.name)
-              });
-            default:
-              return text;
-          }
+            }
+          else
+            group = "twemoji"; // use as default if no group is specified
+
+          var src = emojis.getURL(group, node.name);
+          if (src)
+            return htmlTag("span", text, {
+              class: "pre-emoji",
+              src: src
+            });
+          else
+            return text;
         }
       },
       discord_emoji: {
@@ -84,11 +117,15 @@ return [[(function() {
           };
         },
         html: function(node) {
-          var text = this.sanitizeText(node.originalText);
-          return this.htmlTag("span", text, {
-            class: "pre-emoji",
-            src: buildDiscordEmojiURL(node.id, node.animated)
-          });
+          var text = sanitizeText(node.originalText),
+          src = emojis.getURL("discord", node.id, node.animated);
+          if (src)
+            return htmlTag("span", text, {
+              class: "pre-emoji",
+              src: src
+            });
+          else
+            return text;
         }
       },
       safe_link: {
@@ -99,7 +136,7 @@ return [[(function() {
           };
         },
         html: function(node) {
-          return this.htmlTag("span", node.content, { class: "safe-link", href: node.content });
+          return htmlTag("span", node.content, { class: "safe-link", href: node.content });
         }
       },
       link: {
@@ -110,7 +147,7 @@ return [[(function() {
           };
         },
         html: function(node) {
-          return this.htmlTag("span", node.content, { class: "link", href: node.content });
+          return htmlTag("span", node.content, { class: "link", href: node.content });
         }
       },
       em: {
@@ -121,7 +158,7 @@ return [[(function() {
           };
         },
         html: function(node, output) {
-          return this.htmlTag("em", output(node.content));
+          return htmlTag("em", output(node.content));
         }
       },
       strong: {
@@ -132,7 +169,7 @@ return [[(function() {
           };
         },
         html: function(node, output) {
-          return this.htmlTag("strong", output(node.content));
+          return htmlTag("strong", output(node.content));
         }
       },
       u: {
@@ -143,7 +180,7 @@ return [[(function() {
           };
         },
         html: function(node, output) {
-          return this.htmlTag("u", output(node.content));
+          return htmlTag("u", output(node.content));
         }
       },
       strike: {
@@ -154,7 +191,7 @@ return [[(function() {
           };
         },
         html: function(node, output) {
-          return this.htmlTag("del", output(node.content));
+          return htmlTag("del", output(node.content));
         }
       },
       color: {
@@ -167,16 +204,16 @@ return [[(function() {
         },
         html: function(node) {
           if (/^\d{1,3},\d{1,3},\d{1,3}$/.test(node.content))
-            return this.htmlTag("span", null, { style: "color:rgb(" + node.content + ")" }, false);
+            return htmlTag("span", null, { style: "color:rgb(" + node.content + ")" }, false);
           else if (/^([0-9a-f]{6}|[0-9a-f]{3})$/i.test(node.content))
-            return this.htmlTag("span", null, { style: "color:#" + node.content }, false);
+            return htmlTag("span", null, { style: "color:#" + node.content }, false);
           else {
             var s = new Option().style;
             s.color = node.content;
             if (s.color)
-              return this.htmlTag("span", null, { style: "color:" + node.content }, false);
+              return htmlTag("span", null, { style: "color:" + node.content }, false);
             else
-              return this.sanitizeText(node.originalText);
+              return sanitizeText(node.originalText);
           }
         }
       },
@@ -197,7 +234,7 @@ return [[(function() {
           };
         },
         html: function(node) {
-          return this.sanitizeText(node.content);
+          return sanitizeText(node.content);
         }
       }
     },
@@ -207,35 +244,10 @@ return [[(function() {
     removeRule: function(name) {
       delete this._rules[name];
     },
-    sanitizeText: function(text) {
-      return text.replace(SANITIZE_TEXT_REGEX, function(char) {
-        return SANITIZE_TEXT_CODES[char];
-      });
-    },
-    htmlTag: function(tagName, content, attributes, isClosed) {
-      attributes = attributes || {};
-      isClosed = typeof isClosed !== "undefined" ? isClosed : true;
-  
-      var attributeString = "";
-      for (var attr in attributes) {
-        var attribute = attributes[attr];
-        // removes falsey attributes
-        if (Object.prototype.hasOwnProperty.call(attributes, attr) && attribute) {
-          attributeString += " " +
-            this.sanitizeText(attr) + '="' +
-            this.sanitizeText(attribute) + '"';
-          }
-      }
-  
-      var unclosedTag = "<" + tagName + attributeString + ">";
-  
-      if (isClosed)
-        return unclosedTag + content + "</" + tagName + ">";
-      else
-        return unclosedTag;
-    },
+    sanitizeText,
+    htmlTag,
     nestedParse: function(source) {
-      const ruleList = Object.keys(this._rules);
+      const ruleList = Object.keys(markdown._rules);
       var result = [];
   
       while (source) {
@@ -245,7 +257,7 @@ return [[(function() {
   
         var i = 0;
         var currRuleType = ruleList[0];
-        var currRule = this._rules[currRuleType];
+        var currRule = markdown._rules[currRuleType];
   
         do {
           var currCapture = currRule.match.exec(source);
@@ -258,13 +270,13 @@ return [[(function() {
           
           i++
           currRuleType = ruleList[i];
-          currRule = this._rules[currRuleType];
+          currRule = markdown._rules[currRuleType];
         } while (currRule && !capture);
         
         if (rule == null || capture == null) throw new Error("Could not find a matching rule");
         if (capture.index) throw new Error("'match' must return a capture starting at index 0");
   
-        var parsed = rule.parse(capture, this.nestedParse);
+        var parsed = rule.parse(capture, markdown.nestedParse);
   
         if (Array.isArray(parsed))
           Array.prototype.push.apply(result, parsed);
@@ -293,12 +305,12 @@ return [[(function() {
             }
           }
   
-          result += this.outputHTML(node);
+          result += markdown.outputHTML(node);
         }
   
         return result;
       } else
-        return this._rules[ast.type].html(ast, this.outputHTML);
+        return markdown._rules[ast.type].html(ast, markdown.outputHTML);
     }
   };
-})();]]
+})();

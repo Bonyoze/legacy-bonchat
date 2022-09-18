@@ -50,10 +50,10 @@ local PANEL = {
   end,
   OpenPage = function(self, url)
     self:SetTitle(url)
-    self:SetSize(ScrW() / 2, ScrH() / 2)
-    self:SetPos(ScrW() / 4, ScrH() / 4)
-    self:SetMinWidth(ScrW() / 8)
-    self:SetMinHeight(ScrH() / 8)
+    self:SetSize(ScrW() / 1.5, ScrH() / 1.5)
+    self:SetPos(ScrW() / 2 - self:GetWide() / 2, ScrH() / 2 - self:GetTall() / 2)
+    self:SetMinWidth(ScrW() / 4)
+    self:SetMinHeight(ScrH() / 4)
 
     self.dhtml:OpenURL(url)
 
@@ -85,15 +85,15 @@ local PANEL = {
     self.dhtml:RequestFocus()
   end,
   OpenImage = function(self, title, url, w, h, minW, minH)
-    self:OpenMedia("html/browser_image.html", title, url, w, h, minW, minH)
+    self:OpenMedia("bonchat/html/browser_image.html", title, url, w, h, minW, minH)
   end,
   OpenVideo = function(self, title, url, w, h, minW, minH)
-    self:OpenMedia("html/browser_video.html", title, url, w, h, minW, minH, function()
+    self:OpenMedia("bonchat/html/browser_video.html", title, url, w, h, minW, minH, function()
       self.dhtml:CallJSParams("elem.prop('volume', %f)", BonChat.CVAR.GetAttachVolume())
     end)
   end,
   OpenAudio = function(self, title, url, w, h, minW, minH)
-    self:OpenMedia("html/browser_audio.html", title, url, w, h, minW, minH, function()
+    self:OpenMedia("bonchat/html/browser_audio.html", title, url, w, h, minW, minH, function()
       self.dhtml:CallJSParams("elem.prop('volume', %f)", BonChat.CVAR.GetAttachVolume())
     end)
   end

@@ -1,5 +1,8 @@
 BonChat = BonChat or {}
 
+BonChat.DIR = "bonchat/"
+BonChat.RESOURCE_DIR = BonChat.DIR .. "resources/"
+
 BonChat.DEFAULT_URL_WHITELIST = {
   // Facepunch
   "files.facepunch.com",

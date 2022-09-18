@@ -2,90 +2,39 @@
 AddCSLuaFile("bonchat/convars.lua")
 
 -- client scripts
-AddCSLuaFile("bonchat/message.lua")
-AddCSLuaFile("bonchat/custom_chat.lua")
+AddCSLuaFile(BonChat.DIR .. "message.lua")
+AddCSLuaFile(BonChat.DIR .. "custom_chat.lua")
+AddCSLuaFile(BonChat.DIR .. "net_cl.lua")
 
 -- vgui panels
-AddCSLuaFile("bonchat/vgui/dhtml.lua")
-AddCSLuaFile("bonchat/vgui/browser.lua")
-AddCSLuaFile("bonchat/vgui/chatbox.lua")
-AddCSLuaFile("bonchat/vgui/settings.lua")
-AddCSLuaFile("bonchat/vgui/emojis.lua")
-AddCSLuaFile("bonchat/vgui/attachments.lua")
-AddCSLuaFile("bonchat/vgui/frame.lua")
+AddCSLuaFile(BonChat.DIR .. "vgui/dhtml.lua")
+AddCSLuaFile(BonChat.DIR .. "vgui/browser.lua")
+AddCSLuaFile(BonChat.DIR .. "vgui/chatbox.lua")
+AddCSLuaFile(BonChat.DIR .. "vgui/settings.lua")
+AddCSLuaFile(BonChat.DIR .. "vgui/emojis.lua")
+AddCSLuaFile(BonChat.DIR .. "vgui/attachments.lua")
+AddCSLuaFile(BonChat.DIR .. "vgui/frame.lua")
 
--- resource files
-local function addResources(dir)
-  dir = dir or "bonchat/resources/"
+include(BonChat.DIR .. "convars.lua")
+include(BonChat.DIR .. "custom_chat.lua")
+include(BonChat.DIR .. "net_sv.lua")
 
-  local files, dirs = file.Find(dir .. "*", "LUA")
+function BonChat.GetResourcePaths(dir)
+  dir = dir or ""
+  local tbl = {}
+
+  local files, dirs = file.Find(BonChat.RESOURCE_DIR .. dir .. "*", "LUA")
 
   for _, v in ipairs(files) do
-    AddCSLuaFile(dir .. v)
+    local name = string.StartWith(dir, "bonchat/") and string.gsub(v, "%.lua$", "") or v -- workshop doesn't allow addons to package files with .html, .js, .css, etc. so .lua is appended to the end
+    table.insert(tbl, dir .. name)
   end
 
   for _, v in ipairs(dirs) do
-    addResources(dir .. v .. "/")
+    table.Add(tbl, BonChat.GetResourcePaths(dir .. v .. "/"))
   end
+
+  return tbl
 end
 
-addResources()
-
-include("bonchat/convars.lua")
-include("bonchat/custom_chat.lua")
-
-util.AddNetworkString("bonchat_say")
-util.AddNetworkString("bonchat_istyping")
-
-net.Receive("bonchat_say", function(_, ply)
-  if ply.bonchatLastMsgTime and CurTime() - ply.bonchatLastMsgTime < BonChat.CVAR.GetMsgCooldown() then return end
-
-  local text = string.Left(net.ReadString(), BonChat.CVAR.GetMsgMaxLength())
-  local teamChat = net.ReadBool()
-
-  if not IsValid(ply) and teamChat then return end
-  
-  text = hook.Run("PlayerSay", ply, text, teamChat)
-  if #text == 0 then return end
-
-  local totalAttachs = net.ReadUInt(4)
-  local attachments = {}
-  for i = 1, totalAttachs do
-    local type, value = net.ReadUInt(2), net.ReadString()
-    table.insert(attachments, { type = type, value = value })
-  end
-
-  MsgN("[" .. os.date("%H:%M:%S") .. "] " .. ply:Nick() .. ": " .. text)
-
-  local newData = util.Compress(text)
-
-  net.Start("bonchat_say")
-    net.WriteEntity(ply)
-    net.WriteString(text)
-    net.WriteBool(teamChat)
-    net.WriteBool(not ply:Alive())
-
-    net.WriteUInt(totalAttachs, 4)
-    for i = 1, totalAttachs do
-      local attachment = attachments[i]
-      net.WriteUInt(attachment.type, 2)
-      net.WriteString(attachment.value)
-    end
-  if teamChat then
-    net.Send(team.GetPlayers(ply:Team()))
-  else
-    net.Broadcast()
-  end
-  
-  ply.bonchatLastMsgTime = CurTime()
-end)
-
-net.Receive("bonchat_istyping", function(_, ply)
-  local typing = net.ReadBool()
-  ply.bonchatIsTyping = typing
-
-  net.Start("bonchat_istyping")
-    net.WriteEntity(ply)
-    net.WriteBool(typing)
-  net.SendOmit(ply)
-end)
+BonChat.resourcePaths = BonChat.GetResourcePaths()

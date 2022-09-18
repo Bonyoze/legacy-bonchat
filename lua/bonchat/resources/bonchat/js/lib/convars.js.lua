@@ -1,4 +1,4 @@
-return [[(function() {
+(function() {
   if (window.convars) return;
 
   window.convars = {
@@ -58,4 +58,4 @@ POSTLUA:
     self:CallJSParams("convars.updateConVar('%s', '%s')", string.JavascriptSafe(name), string.JavascriptSafe(val or cvars.String(name)))
   end
 :ENDLUA
-*/]]
+*/

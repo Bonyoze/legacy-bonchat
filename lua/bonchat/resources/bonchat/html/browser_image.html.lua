@@ -1,4 +1,4 @@
-return [[<html>
+<html>
   <head>
     <style>
       html, body {
@@ -30,4 +30,4 @@ return [[<html>
         });
     }
   </script>
-</html>]]
+</html>

@@ -1,7 +1,7 @@
-return [[(function() {
+(function() {
   if (window.emojis) return;
 
-  const SHORTCODE_DATA = JSON.parse('PRELUA: return BonChat.GetResource("shortcode_data.json") :ENDLUA'),
+  const SHORTCODE_DATA = JSON.parse('PRELUA: local data = util.JSONToTable(BonChat.GetResource("bonchat/shortcode_data.json")) local tbl = {} for _, v in pairs(data) do for i = 1, #v, 2 do tbl[v[i]] = v[i + 1] end end return util.TableToJSON(tbl) :ENDLUA'),
   UFE0Fg = /\uFE0F/g,
   U200D = String.fromCharCode(0x200D);
 
@@ -35,31 +35,29 @@ return [[(function() {
 
   window.emojis = {
     _emojis: {
-      default: function(name) {
+      twemoji: function(name) {
         var char = SHORTCODE_DATA[name];
-        if (char)
-          return "https://twemoji.maxcdn.com/v/14.0.2/svg/" + getIcon(char) + ".svg";
-        else
-          return "";
+        if (char) return "https://twemoji.maxcdn.com/v/14.0.2/svg/" + getIcon(char) + ".svg";
       },
       steam: function(name) {
         return "https://steamcommunity-a.akamaihd.net/economy/emoticon/" + name;
       },
-      silkicon: function(name) {
-        return "asset://garrysmod/materials/icon16/" + name;
+      icon16: function(name) {
+        return "asset://garrysmod/materials/icon16/" + name + ".png";
       },
       discord: function(id, animated) {
         return "https://cdn.discordapp.com/emojis/" + id + "." + (animated ? "gif" : "png");
       }
     },
     getURL: function(group) {
-      return this._emojis[group != null ? group : "default"].apply(null, arguments);
+      var groupFn = this._emojis[group];
+      if (groupFn != null) return groupFn.call(null, Array.prototype.slice.call(arguments, 1));
     },
     addEmojiGroup: function(name, fn) {
-      this._emojis[name] = fn;
+      this._emojis[name.toLowerCase()] = fn;
     },
     removeEmojiGroup: function(name) {
-      delete this.emojis[name];
+      delete this.emojis[name.toLowerCase()];
     }
   };
-})();]]
+})();

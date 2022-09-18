@@ -151,6 +151,12 @@ jQuery.fn._loadMedia = function(url) {
   return this;
 };
 
+function Attachment(id) {
+  this.elem = $("<div>")
+    .addClass("attachment")
+    .attr("data-id", id);
+}
+
 jQuery.fn.getAttachmentByID = function(id) {
   return $(".attachment[data-id='" + id + "']", this);
 };
